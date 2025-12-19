@@ -17,10 +17,41 @@ function formatDateOnly(value) {
   }
 }
 
-// 로그인 확인
-if (!token || currentUser.role !== 'ADMIN') {
-  window.location.href = 'index.html';
+// 쿠키 + Authorization 기반 로그인 확인
+async function checkAuth() {
+  // 매번 최신 토큰 사용
+  token = localStorage.getItem('token');
+  try {
+    const res = await fetch(`${API_BASE}/auth/me`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      currentUser = data.user;
+      localStorage.setItem('user', JSON.stringify(currentUser));
+      if (currentUser.role !== 'ADMIN') {
+        window.location.href = 'index.html';
+      }
+      return true;
+    } else {
+      window.location.href = 'index.html';
+      return false;
+    }
+  } catch (err) {
+    console.error('인증 확인 실패:', err);
+    window.location.href = 'index.html';
+    return false;
+  }
 }
+
+// 페이지 로드 시 인증 확인
+checkAuth();
 
 // 로그아웃
 document.getElementById('logout-btn').addEventListener('click', () => {
