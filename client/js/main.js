@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4000';
+const API_BASE = window.location.origin;
 
 // 쿠키에서 토큰 가져오기
 function getCookie(name) {
