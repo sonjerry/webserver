@@ -1,3 +1,5 @@
+USE railway;
+
 CREATE TABLE Users (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(100) NOT NULL UNIQUE,
@@ -201,5 +203,21 @@ CREATE TABLE CoursePolicies (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   FOREIGN KEY (course_id) REFERENCES Courses(id)
 );
+
+-- 초기 데이터 삽입
+-- Admin 사용자 (로그인용)
+INSERT INTO Users (email, name, role) VALUES 
+('admin@example.com', '관리자', 'ADMIN')
+ON DUPLICATE KEY UPDATE email = email;
+
+-- 테스트용 Instructor 사용자
+INSERT INTO Users (email, name, role) VALUES 
+('instructor@example.com', '교수님', 'INSTRUCTOR')
+ON DUPLICATE KEY UPDATE email = email;
+
+-- 테스트용 Student 사용자
+INSERT INTO Users (email, name, role) VALUES 
+('student@example.com', '학생', 'STUDENT')
+ON DUPLICATE KEY UPDATE email = email;
 
 

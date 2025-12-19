@@ -58,37 +58,69 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // API 호출 헬퍼
 async function apiCall(endpoint, options = {}) {
+  // 매 호출 시 최신 토큰 사용
+  token = localStorage.getItem('token');
+  
+  if (!token) {
+    window.location.href = 'index.html';
+    throw new Error('인증 토큰이 없습니다.');
+  }
+  
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`,
       ...options.headers
     }
   });
+  
   if (!response.ok) {
-    const error = await response.json();
+    if (response.status === 401) {
+      // 인증 실패 시 로그인 페이지로 리다이렉트
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+      return;
+    }
+    const error = await response.json().catch(() => ({ message: '요청 실패' }));
     throw new Error(error.message || '요청 실패');
   }
   return response.json();
 }
 
 // 학과 관리
+let isLoadingDepartments = false;
 async function loadDepartments() {
+  if (isLoadingDepartments) return; // 이미 로딩 중이면 중복 호출 방지
+  isLoadingDepartments = true;
+  
   try {
     const departments = await apiCall('/admin/departments');
     const list = document.getElementById('department-list');
-    list.innerHTML = departments.map(dept => `
-      <div class="list-item">
-        <span>${dept.name} (${dept.code})</span>
-        <div>
-          <button class="btn btn-small" onclick="editDepartment(${dept.id}, '${dept.name}', '${dept.code}')">수정</button>
-          <button class="btn btn-small btn-danger" onclick="deleteDepartment(${dept.id})">삭제</button>
+    if (list) {
+      list.innerHTML = departments.map(dept => `
+        <div class="list-item">
+          <span>${dept.name} (${dept.code})</span>
+          <div>
+            <button class="btn btn-small" onclick="editDepartment(${dept.id}, '${dept.name}', '${dept.code}')">수정</button>
+            <button class="btn btn-small btn-danger" onclick="deleteDepartment(${dept.id})">삭제</button>
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('');
+    }
   } catch (err) {
-    alert('학과 목록 로드 실패: ' + err.message);
+    console.error('학과 목록 로드 실패:', err);
+    // 401 에러는 apiCall에서 이미 처리하므로 여기서는 로그만 출력
+    if (err.message !== '인증 토큰이 없습니다.') {
+      const list = document.getElementById('department-list');
+      if (list) {
+        list.innerHTML = '<div class="error-message">학과 목록을 불러올 수 없습니다: ' + err.message + '</div>';
+      }
+    }
+  } finally {
+    isLoadingDepartments = false;
   }
 }
 
@@ -286,14 +318,23 @@ async function loadStudentsForCourseForm() {
   }
 }
 
+let isLoadingDepartmentsForSelect = false;
 async function loadDepartmentsForSelect() {
+  if (isLoadingDepartmentsForSelect) return; // 중복 호출 방지
+  isLoadingDepartmentsForSelect = true;
+  
   try {
     const departments = await apiCall('/admin/departments');
     const select = document.getElementById('course-department');
-    select.innerHTML = '<option value="">학과 선택</option>' + 
-      departments.map(dept => `<option value="${dept.id}">${dept.name}</option>`).join('');
+    if (select) {
+      select.innerHTML = '<option value="">학과 선택</option>' + 
+        departments.map(dept => `<option value="${dept.id}">${dept.name}</option>`).join('');
+    }
   } catch (err) {
     console.error('학과 목록 로드 실패:', err);
+    // 401 에러는 apiCall에서 이미 처리
+  } finally {
+    isLoadingDepartmentsForSelect = false;
   }
 }
 
@@ -1233,6 +1274,8 @@ document.getElementById('audit-refresh-btn').addEventListener('click', () => {
   });
 })();
 
-// 초기 로드
-loadDepartments();
+// 초기 로드 - departments 탭이 활성화되어 있을 때만
+if (document.querySelector('.tab-btn[data-tab="departments"]')?.classList.contains('active')) {
+  loadDepartments();
+}
 

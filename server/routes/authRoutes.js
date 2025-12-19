@@ -37,8 +37,17 @@ router.post('/login', async (req, res) => {
       })
       .json({ token, user: payload });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '로그인 처리 중 오류가 발생했습니다.' });
+    console.error('Login error:', err);
+    console.error('Error details:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState
+    });
+    res.status(500).json({ 
+      message: '로그인 처리 중 오류가 발생했습니다.',
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 
