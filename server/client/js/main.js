@@ -3,11 +3,9 @@ const API_BASE = window.location.origin;
 // 리다이렉트 중복 방지 플래그
 let isRedirecting = false;
 
-// 쿠키에서 토큰 가져오기 (서버가 설정한 HttpOnly 쿠키는 읽을 수 없지만, 클라이언트 쿠키는 읽을 수 있음)
+// 토큰 가져오기 (localStorage만 사용, HttpOnly 쿠키는 JavaScript에서 읽을 수 없음)
 function getAuthToken() {
-  // 1순위: localStorage의 토큰
-  // 2순위: 쿠키의 토큰 (서버가 HttpOnly로 설정한 경우 읽을 수 없지만, 클라이언트 쿠키는 가능)
-  return localStorage.getItem('token') || getCookie('token') || null;
+  return localStorage.getItem('token') || null;
 }
 
 // 로그인 상태 확인 (쿠키 기반)
@@ -117,13 +115,10 @@ if (loginForm) {
       const data = await res.json();
       const { token, user } = data;
 
-      // localStorage와 쿠키 모두에 저장
+      // localStorage에만 저장 (서버가 HttpOnly 쿠키를 자동으로 설정함)
+      // 클라이언트 쿠키는 설정하지 않음 - 서버의 HttpOnly 쿠키와 충돌 방지
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
-      // 클라이언트 쿠키에도 저장 (서버가 HttpOnly 쿠키를 설정하지만, 클라이언트에서도 읽을 수 있도록)
-      if (token) {
-        setCookie('token', token, 1);
-      }
 
       if (user.role === 'STUDENT') {
         window.location.href = 'student.html';
@@ -157,10 +152,9 @@ if (logoutBtn) {
       console.error('로그아웃 요청 실패:', err);
     }
     
-    // localStorage와 쿠키 모두 정리
+    // localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    deleteCookie('token');
     
     // 로그인 페이지로 리다이렉트
     window.location.href = 'index.html';

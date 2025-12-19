@@ -1,8 +1,8 @@
 const API_BASE = window.location.origin;
 
-// 토큰 가져오기 (localStorage 우선, 쿠키 차선)
+// 토큰 가져오기 (localStorage만 사용, HttpOnly 쿠키는 JavaScript에서 읽을 수 없음)
 function getAuthToken() {
-  return localStorage.getItem('token') || getCookie('token') || null;
+  return localStorage.getItem('token') || null;
 }
 
 let token = getAuthToken();
@@ -68,10 +68,9 @@ async function checkAuth() {
         } catch (err) {
           console.error('로그아웃 요청 실패:', err);
         }
-        // localStorage와 쿠키 모두 정리
+        // localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        deleteCookie('token');
         isRedirecting = true;
         window.location.href = 'index.html';
         return false;
@@ -144,10 +143,9 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
     console.error('로그아웃 요청 실패:', err);
   }
   
-  // localStorage와 쿠키 모두 정리
+  // localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
   localStorage.removeItem('token');
   localStorage.removeItem('user');
-  deleteCookie('token');
   
   // 로그인 페이지로 리다이렉트
   window.location.href = 'index.html';
