@@ -51,24 +51,51 @@ const createSession = async (req, res) => {
       return res.status(403).json({ message: '해당 강의의 담당교원이 아닙니다.' });
     }
     
-    let auth_code = null;
-    if (attendance_method === 'AUTH_CODE') {
-      auth_code = generateAuthCode();
-    }
-    
     const connection = await pool.getConnection();
     try {
       await connection.beginTransaction();
 
-      const [result] = await connection.query(
-        `INSERT INTO ClassSessions (course_id, week_number, session_date, start_time, end_time, attendance_method, auth_code) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [course_id, week_number, session_date, start_time || null, end_time || null, attendance_method, auth_code]
+      // 같은 주차의 기존 세션 확인
+      const [existingSessions] = await connection.query(
+        'SELECT id FROM ClassSessions WHERE course_id = ? AND week_number = ?',
+        [course_id, week_number]
       );
-      const sessionId = result.insertId;
 
-      // 호명 방식인 경우: 기본값 출석으로 전체 수강생 출석 생성
-      if (attendance_method === 'ROLL_CALL') {
+      let sessionId;
+      let auth_code = null;
+      let isNewSession = false;
+      
+      if (existingSessions.length > 0) {
+        // 기존 세션이 있으면 업데이트
+        sessionId = existingSessions[0].id;
+        
+        if (attendance_method === 'AUTH_CODE') {
+          auth_code = generateAuthCode();
+        }
+        
+        await connection.query(
+          `UPDATE ClassSessions 
+           SET session_date = ?, start_time = ?, end_time = ?, attendance_method = ?, auth_code = ?
+           WHERE id = ?`,
+          [session_date, start_time || null, end_time || null, attendance_method, auth_code, sessionId]
+        );
+      } else {
+        // 기존 세션이 없으면 새로 생성
+        isNewSession = true;
+        if (attendance_method === 'AUTH_CODE') {
+          auth_code = generateAuthCode();
+        }
+        
+        const [result] = await connection.query(
+          `INSERT INTO ClassSessions (course_id, week_number, session_date, start_time, end_time, attendance_method, auth_code) 
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [course_id, week_number, session_date, start_time || null, end_time || null, attendance_method, auth_code]
+        );
+        sessionId = result.insertId;
+      }
+
+      // 호명 방식이고 새로 생성된 세션인 경우: 기본값 출석으로 전체 수강생 출석 생성
+      if (attendance_method === 'ROLL_CALL' && isNewSession) {
         const [enrollments] = await connection.query(
           'SELECT user_id FROM Enrollment WHERE course_id = ? AND role = "STUDENT"',
           [course_id]
@@ -76,7 +103,7 @@ const createSession = async (req, res) => {
         if (enrollments.length > 0) {
           const values = enrollments.map(e => [sessionId, e.user_id, 1]);
           await connection.query(
-            'INSERT INTO Attendances (session_id, student_id, status) VALUES ?',
+            'INSERT INTO Attendances (session_id, student_id, status) VALUES ? ON DUPLICATE KEY UPDATE status = VALUES(status)',
             [values]
           );
         }

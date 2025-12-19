@@ -252,7 +252,7 @@ async function loadAttendance() {
 document.getElementById('attendance-refresh-btn').addEventListener('click', loadAttendance);
 document.getElementById('attendance-course-filter').addEventListener('change', loadAttendance);
 
-// 공결 신청용 세션 목록
+// 공결 신청용 주차 목록
 async function loadSessionsForExcuse() {
   try {
     const courses = await apiCall('/student/courses');
@@ -266,7 +266,7 @@ async function loadSessionsForExcuse() {
       }
     }
     const select = document.getElementById('excuse-session');
-    select.innerHTML = '<option value="">세션 선택</option>' + 
+    select.innerHTML = '<option value="">주차 선택</option>' + 
       allSessions.map(s => `<option value="${s.id}">${s.course_title} - ${s.week_number}주차 (${s.session_date})</option>`).join('');
   } catch (err) {
     console.error('세션 목록 로드 실패:', err);
@@ -491,7 +491,7 @@ document.getElementById('message-form').addEventListener('submit', async (e) => 
   }
 });
 
-// 이의제기용 세션 목록
+// 이의제기용 주차 목록
 async function loadSessionsForAppeal() {
   try {
     const courses = await apiCall('/student/courses');
@@ -505,7 +505,7 @@ async function loadSessionsForAppeal() {
       }
     }
     const select = document.getElementById('appeal-session');
-    select.innerHTML = '<option value="">세션 선택</option>' + 
+    select.innerHTML = '<option value="">주차 선택</option>' + 
       allSessions.map(s => `<option value="${s.id}">${s.course_title} - ${s.week_number}주차 (${s.session_date})</option>`).join('');
   } catch (err) {
     console.error('세션 목록 로드 실패:', err);
@@ -520,7 +520,7 @@ document.getElementById('appeal-form').addEventListener('submit', async (e) => {
     const message = document.getElementById('appeal-message').value;
     
     if (!sessionId || !message) {
-      alert('세션과 메시지를 모두 입력해주세요.');
+      alert('주차와 메시지를 모두 입력해주세요.');
       return;
     }
     
@@ -540,7 +540,7 @@ document.getElementById('appeal-form').addEventListener('submit', async (e) => {
   }
 });
 
-// 이의제기 탭으로 이동하고 세션 선택
+// 이의제기 탭으로 이동하고 주차 선택
 function goToAppealTab(sessionId) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));

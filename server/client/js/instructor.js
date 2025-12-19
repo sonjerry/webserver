@@ -902,7 +902,7 @@ async function loadSessionsForAttendance(courseId) {
         <div class="attendance-session-item ${isMakeup ? 'session-makeup' : ''}" data-session-id="${session.id}">
           <div class="attendance-session-item-main">
             <span class="attendance-session-item-title">${session.week_number || '-'}주차</span>
-            <span class="attendance-session-item-sub">${session.session_date || ''} · ${methodNames[session.attendance_method] || session.attendance_method}</span>
+            <span class="attendance-session-item-sub">${session.session_date || ''}</span>
             ${isMakeup ? '<span style="background: #fee2e2; color: #991b1b; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; margin-left: 8px;">보강</span>' : ''}
           </div>
           <div>
