@@ -202,13 +202,27 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // 페이지 이탈 시 진행 중인 출석 세션 자동 마감
 window.addEventListener('beforeunload', () => {
-  if (!currentOpenSessionId) return;
-  try {
-    // sendBeacon은 비동기이지만 브라우저가 언로드 시점에 최대한 전송을 시도함
-    navigator.sendBeacon(`${API_BASE}/sessions/${currentOpenSessionId}/close`);
-    currentOpenSessionId = null;
-  } catch (e) {
-    // 실패해도 추가 처리 없음
+  // 팝업이 열려있으면 세션 마감 (인증번호/전자출결 방식)
+  const modal = document.getElementById('attendance-session-modal');
+  const isPopupOpen = modal && modal.classList.contains('open');
+  
+  if (isPopupOpen && currentAttendanceSessionId) {
+    try {
+      // sendBeacon은 비동기이지만 브라우저가 언로드 시점에 최대한 전송을 시도함
+      navigator.sendBeacon(`${API_BASE}/sessions/${currentAttendanceSessionId}/close`);
+      currentAttendanceSessionId = null;
+      currentOpenSessionId = null;
+    } catch (e) {
+      // 실패해도 추가 처리 없음
+    }
+  } else if (currentOpenSessionId) {
+    // 호명 방식 등 팝업이 없는 경우
+    try {
+      navigator.sendBeacon(`${API_BASE}/sessions/${currentOpenSessionId}/close`);
+      currentOpenSessionId = null;
+    } catch (e) {
+      // 실패해도 추가 처리 없음
+    }
   }
 });
 
@@ -360,30 +374,12 @@ function renderCourseDetailPanel(courseId) {
         })
       });
 
-      // 팝업이 열려있지 않으면 다른 진행 중인 출석 세션들을 먼저 마감
-      const modal = document.getElementById('attendance-session-modal');
-      const isPopupOpen = modal && modal.classList.contains('open');
-      
-      if (!isPopupOpen) {
-        try {
-          const dashboard = await apiCall('/dashboard/instructor');
-          if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
-            // 현재 열려있는 세션들을 모두 마감 (현재 생성한 세션 제외)
-            const closePromises = dashboard.open_sessions
-              .filter(s => s.id !== created.id)
-              .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
-            await Promise.all(closePromises);
-          }
-        } catch (err) {
-          console.error('다른 세션 마감 실패:', err);
-        }
-      }
-
-      // 호명/인증번호/전자출결 모두 출석을 열어줌
-      await apiCall(`/sessions/${created.id}/open`, { method: 'POST' });
-      currentOpenSessionId = created.id;
-
+      // 호명 방식은 팝업 없이도 세션 열기 가능
+      // 인증번호/전자출결은 팝업이 열려있을 때만 세션 활성화
       if (method === 'ROLL_CALL') {
+        // 호명 방식: 다른 진행 중인 세션들을 먼저 마감하지 않고 바로 열기
+        await apiCall(`/sessions/${created.id}/open`, { method: 'POST' });
+        currentOpenSessionId = created.id;
         resultDiv.textContent = `호명 출석 세션이 생성되었습니다. (세션 ID: ${created.id}) 출석 현황 탭에서 학생별로 상태를 조정하세요.`;
         // 출석 현황 탭으로 전환하여 방금 생성한 세션 선택
         const attendanceTabBtn = document.querySelector('.tab-btn[data-tab="attendance"]');
@@ -403,7 +399,25 @@ function renderCourseDetailPanel(courseId) {
           }
         }, 300);
       } else if (method === 'AUTH_CODE' || method === 'ELECTRONIC') {
-        // 인증번호 또는 전자출결일 경우 팝업 띄우기
+        // 인증번호 또는 전자출결일 경우: 다른 진행 중인 세션들을 먼저 마감
+        try {
+          const dashboard = await apiCall('/dashboard/instructor');
+          if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
+            // 현재 열려있는 세션들을 모두 마감 (현재 생성한 세션 제외)
+            const closePromises = dashboard.open_sessions
+              .filter(s => s.id !== created.id)
+              .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
+            await Promise.all(closePromises);
+          }
+        } catch (err) {
+          console.error('다른 세션 마감 실패:', err);
+        }
+        
+        // 세션 열기
+        await apiCall(`/sessions/${created.id}/open`, { method: 'POST' });
+        currentOpenSessionId = created.id;
+        
+        // 팝업 띄우기
         openAttendanceSessionPopup(created.id, course.title, week, date, method, created.auth_code);
       }
     } catch (err) {
@@ -840,11 +854,12 @@ async function removeMakeupSession(courseId, weekNumber, sessionId) {
 // 출석 열기/일시정지/마감 (출석 현황 탭에서 사용)
 async function openSession(id) {
   try {
-    // 팝업이 열려있지 않으면 다른 진행 중인 출석 세션들을 먼저 마감
-    const modal = document.getElementById('attendance-session-modal');
-    const isPopupOpen = modal && modal.classList.contains('open');
+    // 세션 정보 먼저 가져오기
+    const session = await apiCall(`/sessions/${id}`);
     
-    if (!isPopupOpen) {
+    // 인증번호나 전자출결이면 팝업이 열려있을 때만 세션 활성화
+    if (session.attendance_method === 'AUTH_CODE' || session.attendance_method === 'ELECTRONIC') {
+      // 다른 진행 중인 출석 세션들을 먼저 마감
       try {
         const dashboard = await apiCall('/dashboard/instructor');
         if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
@@ -857,22 +872,20 @@ async function openSession(id) {
       } catch (err) {
         console.error('다른 세션 마감 실패:', err);
       }
-    }
-    
-    await apiCall(`/sessions/${id}/open`, { method: 'POST' });
-    currentOpenSessionId = id;
-    
-    // 세션 정보 가져오기
-    const session = await apiCall(`/sessions/${id}`);
-    
-    // 인증번호나 전자출결이면 팝업 열기
-    if (session.attendance_method === 'AUTH_CODE' || session.attendance_method === 'ELECTRONIC') {
-      // 세션 정보에서 주차와 날짜 정보 가져오기
+      
+      // 세션 열기
+      await apiCall(`/sessions/${id}/open`, { method: 'POST' });
+      currentOpenSessionId = id;
+      
+      // 팝업 열기
       const weekNumber = session.week_number || '';
       const sessionDate = session.session_date || '';
       const courseTitle = session.course_title || '강의';
       openAttendanceSessionPopup(id, courseTitle, weekNumber, sessionDate, session.attendance_method, session.auth_code);
     } else {
+      // 호명 방식은 팝업 없이도 세션 열기 가능
+      await apiCall(`/sessions/${id}/open`, { method: 'POST' });
+      currentOpenSessionId = id;
       alert('출석이 열렸습니다.');
     }
     
@@ -1655,22 +1668,6 @@ let attendanceSessionInterval = null;
 let currentAttendanceSessionId = null;
 
 function openAttendanceSessionPopup(sessionId, courseTitle, weekNumber, sessionDate, attendanceMethod, authCode) {
-  // 팝업이 열릴 때 다른 진행 중인 출석 세션들을 먼저 마감
-  (async () => {
-    try {
-      const dashboard = await apiCall('/dashboard/instructor');
-      if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
-        // 현재 열려있는 세션들을 모두 마감 (현재 세션 제외)
-        const closePromises = dashboard.open_sessions
-          .filter(s => s.id !== sessionId)
-          .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
-        await Promise.all(closePromises);
-      }
-    } catch (err) {
-      console.error('다른 세션 마감 실패:', err);
-    }
-  })();
-  
   currentAttendanceSessionId = sessionId;
   const modal = document.getElementById('attendance-session-modal');
   const body = document.getElementById('attendance-session-body');
