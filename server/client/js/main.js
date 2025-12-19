@@ -46,10 +46,38 @@ async function checkAuthStatus() {
       }
       
       return user;
+    } else {
+      // 401: 인증 실패 - 정상 (로그인 페이지에 있으므로)
+      // 500: 서버 에러 - 에러 표시
+      const status = res.status;
+      if (status === 500) {
+        const errorData = await res.json().catch(() => ({ message: '서버 오류가 발생했습니다.' }));
+        console.error('서버 오류:', errorData.message);
+        // 로그인 페이지에서 서버 오류 표시
+        const loginForm = document.getElementById('login-form');
+        if (loginForm) {
+          const errorDiv = document.createElement('div');
+          errorDiv.style.cssText = 'color: red; margin-top: 10px; padding: 10px; background: #ffe6e6; border-radius: 4px;';
+          errorDiv.textContent = `서버 연결 오류: ${errorData.message || '데이터베이스 연결에 실패했습니다.'}`;
+          loginForm.appendChild(errorDiv);
+          // 5초 후 제거
+          setTimeout(() => errorDiv.remove(), 5000);
+        }
+      }
+      return null;
     }
-    return null;
   } catch (err) {
-    console.error('인증 확인 실패:', err);
+    // 네트워크 에러
+    console.error('인증 확인 실패 (네트워크 오류):', err);
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+      const errorDiv = document.createElement('div');
+      errorDiv.style.cssText = 'color: red; margin-top: 10px; padding: 10px; background: #ffe6e6; border-radius: 4px;';
+      errorDiv.textContent = '서버에 연결할 수 없습니다. 네트워크 연결을 확인해주세요.';
+      loginForm.appendChild(errorDiv);
+      // 5초 후 제거
+      setTimeout(() => errorDiv.remove(), 5000);
+    }
     return null;
   }
 }

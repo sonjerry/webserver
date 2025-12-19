@@ -48,7 +48,35 @@ async function checkAuth() {
       }
       return true;
     } else {
-      // 인증 실패 시 토큰 제거 후 리다이렉트
+      // 응답 상태 코드에 따라 처리
+      const status = res.status;
+      
+      // 401: 인증 실패 (토큰 없음/만료) - 리다이렉트
+      if (status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        isRedirecting = true;
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      // 500: 서버 에러 (DB 연결 실패 등) - 에러 메시지 표시하고 리다이렉트 안 함
+      if (status === 500) {
+        const errorData = await res.json().catch(() => ({ message: '서버 오류가 발생했습니다.' }));
+        console.error('서버 오류:', errorData.message);
+        // DB 연결 실패 등 서버 오류는 리다이렉트하지 않고 에러만 표시
+        document.body.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+            <h2>서버 연결 오류</h2>
+            <p>${errorData.message || '데이터베이스 연결에 실패했습니다.'}</p>
+            <p>서버 상태를 확인해주세요.</p>
+            <button onclick="window.location.href='index.html'" style="margin-top: 20px; padding: 10px 20px;">로그인 페이지로</button>
+          </div>
+        `;
+        return false;
+      }
+      
+      // 기타 에러 (404 등) - 리다이렉트
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       isRedirecting = true;
@@ -56,11 +84,17 @@ async function checkAuth() {
       return false;
     }
   } catch (err) {
-    console.error('인증 확인 실패:', err);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    isRedirecting = true;
-    window.location.href = 'index.html';
+    // 네트워크 에러 등 fetch 자체가 실패한 경우
+    console.error('인증 확인 실패 (네트워크 오류):', err);
+    // 네트워크 오류는 리다이렉트하지 않고 에러 표시
+    document.body.innerHTML = `
+      <div style="padding: 20px; text-align: center;">
+        <h2>연결 오류</h2>
+        <p>서버에 연결할 수 없습니다.</p>
+        <p>네트워크 연결과 서버 상태를 확인해주세요.</p>
+        <button onclick="window.location.href='index.html'" style="margin-top: 20px; padding: 10px 20px;">로그인 페이지로</button>
+      </div>
+    `;
     return false;
   }
 }

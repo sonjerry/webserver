@@ -88,8 +88,31 @@ router.get('/me', authenticateToken, async (req, res) => {
     }
     res.json({ user: rows[0] });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '사용자 정보 조회 중 오류가 발생했습니다.' });
+    console.error('DB 쿼리 오류 (/auth/me):', err);
+    console.error('에러 상세:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState
+    });
+    
+    // DB 연결 관련 에러인지 확인
+    const isDbConnectionError = err.code === 'ECONNREFUSED' || 
+                                 err.code === 'ETIMEDOUT' ||
+                                 err.code === 'PROTOCOL_CONNECTION_LOST' ||
+                                 err.code === 'ER_ACCESS_DENIED_ERROR' ||
+                                 err.errno === 1045 || // Access denied
+                                 err.errno === 2002 || // Can't connect to server
+                                 err.errno === 2003;   // Connection refused
+    
+    const errorMessage = isDbConnectionError 
+      ? '데이터베이스 연결에 실패했습니다. 서버 관리자에게 문의하세요.'
+      : '사용자 정보 조회 중 오류가 발생했습니다.';
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    });
   }
 });
 

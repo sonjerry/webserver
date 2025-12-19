@@ -40,6 +40,28 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
+// DB 연결 상태 확인
+app.get('/health/db', async (req, res) => {
+  const pool = require('./config/db');
+  try {
+    const [rows] = await pool.query('SELECT 1 as test');
+    res.json({ 
+      status: 'ok', 
+      database: 'connected',
+      test: rows[0] 
+    });
+  } catch (err) {
+    console.error('DB 헬스체크 실패:', err);
+    res.status(500).json({ 
+      status: 'error', 
+      database: 'disconnected',
+      message: err.message,
+      code: err.code,
+      errno: err.errno
+    });
+  }
+});
+
 // API 라우트 (정적 파일 서빙보다 먼저 배치)
 app.use('/auth', authRoutes);
 app.use('/courses', courseRoutes);
