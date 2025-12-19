@@ -1,11 +1,17 @@
 const API_BASE = window.location.origin;
-let token = localStorage.getItem('token');
+
+// 토큰 가져오기 (localStorage 우선, 쿠키 차선)
+function getAuthToken() {
+  return localStorage.getItem('token') || getCookie('token') || null;
+}
+
+let token = getAuthToken();
 let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
 // 쿠키 + Authorization 기반 로그인 확인
 async function checkAuth() {
-  // 매번 최신 토큰 사용
-  token = localStorage.getItem('token');
+  // 매번 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  token = getAuthToken();
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
@@ -25,11 +31,18 @@ async function checkAuth() {
       }
       return true;
     } else {
+      // 인증 실패 시 쿠키도 정리
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      deleteCookie('token');
       window.location.href = 'index.html';
       return false;
     }
   } catch (err) {
     console.error('인증 확인 실패:', err);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    deleteCookie('token');
     window.location.href = 'index.html';
     return false;
   }
@@ -48,15 +61,17 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   } catch (err) {
     console.error('로그아웃 요청 실패:', err);
   }
+  // localStorage와 쿠키 모두 정리
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  deleteCookie('token');
   window.location.href = 'index.html';
 });
 
 // API 호출 헬퍼
 async function apiCall(endpoint, options = {}) {
-  // 매 호출 시 최신 토큰 사용
-  token = localStorage.getItem('token');
+  // 매 호출 시 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  token = getAuthToken();
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: 'include',
@@ -68,6 +83,10 @@ async function apiCall(endpoint, options = {}) {
   });
   if (!response.ok) {
     if (response.status === 401) {
+      // 인증 실패 시 쿠키도 정리
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      deleteCookie('token');
       window.location.href = 'index.html';
       return;
     }

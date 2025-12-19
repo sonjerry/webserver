@@ -1,20 +1,24 @@
 const API_BASE = window.location.origin;
 
-// 쿠키에서 토큰 가져오기
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop().split(';').shift();
-  return null;
-}
-
 // 리다이렉트 중복 방지 플래그
 let isRedirecting = false;
+
+// 쿠키에서 토큰 가져오기 (서버가 설정한 HttpOnly 쿠키는 읽을 수 없지만, 클라이언트 쿠키는 읽을 수 있음)
+function getAuthToken() {
+  // 1순위: localStorage의 토큰
+  // 2순위: 쿠키의 토큰 (서버가 HttpOnly로 설정한 경우 읽을 수 없지만, 클라이언트 쿠키는 가능)
+  return localStorage.getItem('token') || getCookie('token') || null;
+}
 
 // 로그인 상태 확인 (쿠키 기반)
 async function checkAuthStatus() {
   // 이미 리다이렉트 중이면 중복 방지
   if (isRedirecting) return null;
+  
+  // index.html이 아니면 실행하지 않음 (무한 루프 방지)
+  if (!window.location.pathname.includes('index.html') && !window.location.pathname.endsWith('/')) {
+    return null;
+  }
   
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
@@ -33,7 +37,7 @@ async function checkAuthStatus() {
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', data.token || localStorage.getItem('token') || '');
       
-      // 로그인 페이지에서 접근한 경우 대시보드로 리다이렉트
+      // 로그인 페이지에서 접근한 경우에만 대시보드로 리다이렉트
       if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
         isRedirecting = true;
         if (user.role === 'STUDENT') {
@@ -113,9 +117,13 @@ if (loginForm) {
       const data = await res.json();
       const { token, user } = data;
 
-      // localStorage에도 저장 (기존 코드와 호환)
+      // localStorage와 쿠키 모두에 저장
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
+      // 클라이언트 쿠키에도 저장 (서버가 HttpOnly 쿠키를 설정하지만, 클라이언트에서도 읽을 수 있도록)
+      if (token) {
+        setCookie('token', token, 1);
+      }
 
       if (user.role === 'STUDENT') {
         window.location.href = 'student.html';
@@ -137,6 +145,9 @@ if (loginForm) {
 const logoutBtn = document.getElementById('logout-btn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
+    // 리다이렉트 플래그 설정 (무한 루프 방지)
+    isRedirecting = true;
+    
     try {
       await fetch(`${API_BASE}/auth/logout`, {
         method: 'POST',
@@ -145,8 +156,13 @@ if (logoutBtn) {
     } catch (err) {
       console.error('로그아웃 요청 실패:', err);
     }
+    
+    // localStorage와 쿠키 모두 정리
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    deleteCookie('token');
+    
+    // 로그인 페이지로 리다이렉트
     window.location.href = 'index.html';
   });
 }

@@ -1,5 +1,11 @@
 const API_BASE = window.location.origin;
-let token = localStorage.getItem('token');
+
+// 토큰 가져오기 (localStorage 우선, 쿠키 차선)
+function getAuthToken() {
+  return localStorage.getItem('token') || getCookie('token') || null;
+}
+
+let token = getAuthToken();
 let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
 // 날짜 문자열을 YYYY-MM-DD 형식으로 변환
@@ -25,8 +31,8 @@ async function checkAuth() {
   // 이미 리다이렉트 중이면 중복 방지
   if (isRedirecting) return false;
   
-  // 매번 최신 토큰 사용
-  token = localStorage.getItem('token');
+  // 매번 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  token = getAuthToken();
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
@@ -51,10 +57,21 @@ async function checkAuth() {
       // 응답 상태 코드에 따라 처리
       const status = res.status;
       
-      // 401: 인증 실패 (토큰 없음/만료) - 리다이렉트
+      // 401: 인증 실패 (토큰 없음/만료) - 서버에 로그아웃 요청 후 리다이렉트
       if (status === 401) {
+        // 쿠키 제거를 위해 서버에 로그아웃 요청
+        try {
+          await fetch(`${API_BASE}/auth/logout`, {
+            method: 'POST',
+            credentials: 'include',
+          });
+        } catch (err) {
+          console.error('로그아웃 요청 실패:', err);
+        }
+        // localStorage와 쿠키 모두 정리
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        deleteCookie('token');
         isRedirecting = true;
         window.location.href = 'index.html';
         return false;
@@ -76,9 +93,19 @@ async function checkAuth() {
         return false;
       }
       
-      // 기타 에러 (404 등) - 리다이렉트
+      // 기타 에러 (404 등) - 서버에 로그아웃 요청 후 리다이렉트
+      try {
+        await fetch(`${API_BASE}/auth/logout`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+      } catch (err) {
+        console.error('로그아웃 요청 실패:', err);
+      }
+      // localStorage와 쿠키 모두 정리
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      deleteCookie('token');
       isRedirecting = true;
       window.location.href = 'index.html';
       return false;
@@ -103,9 +130,26 @@ async function checkAuth() {
 checkAuth();
 
 // 로그아웃
-document.getElementById('logout-btn').addEventListener('click', () => {
+document.getElementById('logout-btn').addEventListener('click', async () => {
+  // 리다이렉트 플래그 설정 (무한 루프 방지)
+  isRedirecting = true;
+  
+  try {
+    // 서버에 로그아웃 요청 (쿠키 제거)
+    await fetch(`${API_BASE}/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (err) {
+    console.error('로그아웃 요청 실패:', err);
+  }
+  
+  // localStorage와 쿠키 모두 정리
   localStorage.removeItem('token');
   localStorage.removeItem('user');
+  deleteCookie('token');
+  
+  // 로그인 페이지로 리다이렉트
   window.location.href = 'index.html';
 });
 
@@ -138,17 +182,18 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 
 // API 호출 헬퍼
 async function apiCall(endpoint, options = {}) {
-  // 매 호출 시 최신 토큰 사용
-  token = localStorage.getItem('token');
+  // 매 호출 시 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  token = getAuthToken();
   
   if (!token) {
-    if (!isRedirecting) {
-      isRedirecting = true;
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = 'index.html';
-    }
-    throw new Error('인증 토큰이 없습니다.');
+      if (!isRedirecting) {
+        isRedirecting = true;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        deleteCookie('token');
+        window.location.href = 'index.html';
+      }
+      throw new Error('인증 토큰이 없습니다.');
   }
   
   const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -168,6 +213,7 @@ async function apiCall(endpoint, options = {}) {
         isRedirecting = true;
         localStorage.removeItem('token');
         localStorage.removeItem('user');
+        deleteCookie('token');
         window.location.href = 'index.html';
       }
       throw new Error('인증이 만료되었습니다.');
