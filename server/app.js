@@ -57,34 +57,36 @@ app.use('/files', fileRoutes);
 app.use('/audits', auditRoutes);
 
 // 클라이언트 정적 파일 서빙 (API 라우트 이후에 배치)
-// Railway에서 Root Directory가 'server'인 경우, __dirname은 /app/server
-// 따라서 ../client는 /app/client를 가리킴
-const clientPath = path.resolve(__dirname, '../client');
+// Railway 환경에 따라 경로가 다를 수 있으므로 여러 경로 시도
 console.log('=== Client Path Debug ===');
 console.log('__dirname:', __dirname);
-console.log('clientPath:', clientPath);
-console.log('clientPath exists:', fs.existsSync(clientPath));
+console.log('process.cwd():', process.cwd());
 
-if (fs.existsSync(clientPath)) {
-  console.log('✅ Using client path:', clientPath);
+// 가능한 경로들 시도
+const possiblePaths = [
+  path.resolve(__dirname, '../client'),  // __dirname이 /app/server인 경우
+  path.resolve(__dirname, './client'),   // __dirname이 /app인 경우
+  path.resolve(process.cwd(), 'client'),  // 작업 디렉토리 기준
+  path.resolve(process.cwd(), '../client') // 작업 디렉토리가 server인 경우
+];
+
+let clientPath = null;
+for (const testPath of possiblePaths) {
+  console.log(`Testing path: ${testPath}, exists: ${fs.existsSync(testPath)}`);
+  if (fs.existsSync(testPath)) {
+    clientPath = testPath;
+    console.log('✅ Found client path:', clientPath);
+    break;
+  }
+}
+
+if (clientPath) {
   app.use(express.static(clientPath, {
     index: 'index.html',
     extensions: ['html']
   }));
 } else {
-  console.error('❌ Client directory not found at:', clientPath);
-  // 프로젝트 루트가 루트인 경우 시도
-  const altClientPath = path.resolve(__dirname, './client');
-  console.log('Trying alternative path:', altClientPath);
-  if (fs.existsSync(altClientPath)) {
-    console.log('✅ Using alternative client path:', altClientPath);
-    app.use(express.static(altClientPath, {
-      index: 'index.html',
-      extensions: ['html']
-    }));
-  } else {
-    console.error('❌ Alternative path also not found');
-  }
+  console.error('❌ Client directory not found in any of these paths:', possiblePaths);
 }
 
 // 404 핸들링 (모든 라우트와 정적 파일 서빙 이후)
@@ -97,26 +99,33 @@ app.use((req, res) => {
     res.status(404).json({ message: 'API 엔드포인트를 찾을 수 없습니다.' });
   } else {
     // 클라이언트 요청인 경우 index.html 반환 (SPA 라우팅 지원)
-    const indexPath = path.resolve(__dirname, '../client/index.html');
-    const altIndexPath = path.resolve(__dirname, './client/index.html');
+    const possibleIndexPaths = [
+      path.resolve(__dirname, '../client/index.html'),
+      path.resolve(__dirname, './client/index.html'),
+      path.resolve(process.cwd(), 'client/index.html'),
+      path.resolve(process.cwd(), '../client/index.html')
+    ];
     
-    console.log('Trying index.html at:', indexPath);
-    console.log('Index exists:', fs.existsSync(indexPath));
+    let indexPath = null;
+    for (const testPath of possibleIndexPaths) {
+      if (fs.existsSync(testPath)) {
+        indexPath = testPath;
+        break;
+      }
+    }
     
-    if (fs.existsSync(indexPath)) {
+    if (indexPath) {
       console.log('✅ Sending index.html from:', indexPath);
       res.sendFile(indexPath);
-    } else if (fs.existsSync(altIndexPath)) {
-      console.log('✅ Sending index.html from alternative path:', altIndexPath);
-      res.sendFile(altIndexPath);
     } else {
       console.error('❌ index.html을 찾을 수 없습니다.');
-      console.error('Tried paths:', indexPath, altIndexPath);
+      console.error('Tried paths:', possibleIndexPaths);
       res.status(404).json({ 
         message: '페이지를 찾을 수 없습니다.',
         debug: {
           __dirname: __dirname,
-          triedPaths: [indexPath, altIndexPath]
+          cwd: process.cwd(),
+          triedPaths: possibleIndexPaths
         }
       });
     }
