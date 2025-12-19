@@ -794,6 +794,31 @@ const sendMessage = async (req, res) => {
   }
 };
 
+// 공강 투표 목록 및 결과 조회 (교원용)
+const getVotes = async (req, res) => {
+  const instructorId = req.user.id;
+  try {
+    const [votes] = await pool.query(
+      `SELECT v.*, c.title AS course_title,
+              (SELECT cs.week_number FROM ClassSessions cs WHERE cs.course_id = v.course_id AND cs.session_date = v.vote_date LIMIT 1) AS week_number,
+              (SELECT COUNT(*) FROM VoteResponses WHERE vote_id = v.id AND response = 'YES') AS yes_count,
+              (SELECT COUNT(*) FROM VoteResponses WHERE vote_id = v.id AND response = 'NO') AS no_count,
+              (SELECT COUNT(*) FROM Enrollment WHERE course_id = v.course_id AND role = 'STUDENT') AS total_students,
+              (SELECT COUNT(DISTINCT student_id) FROM VoteResponses WHERE vote_id = v.id) AS responded_count
+       FROM Votes v
+       JOIN Courses c ON v.course_id = c.id
+       WHERE v.instructor_id = ?
+       ORDER BY v.created_at DESC`,
+      [instructorId]
+    );
+    
+    res.json(votes);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '투표 목록 조회 중 오류가 발생했습니다.' });
+  }
+};
+
 // 공강 투표 생성
 const createVote = async (req, res) => {
   const instructorId = req.user.id;
@@ -1000,6 +1025,7 @@ module.exports = {
   getChatRooms,
   getChatMessages,
   sendMessage,
+  getVotes,
   createVote,
   getHolidays,
   createHoliday,

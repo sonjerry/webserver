@@ -20,6 +20,8 @@ router.get('/chat-rooms/:studentId', instructorController.getChatMessages);
 // 메시지 작성
 router.post('/messages', instructorController.sendMessage);
 
+// 공강 투표 목록 및 결과 조회
+router.get('/votes', instructorController.getVotes);
 // 공강 투표 생성
 router.post('/votes', instructorController.createVote);
 

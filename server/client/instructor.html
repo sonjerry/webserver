@@ -169,35 +169,47 @@
 
     <!-- 공강 투표 -->
     <div id="votes" class="tab-content">
-      <h2>공강 투표 생성</h2>
-      <div class="form-section">
-        <form id="vote-form">
-          <select id="vote-course" required>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div>
+          <h2>공강 투표 생성</h2>
+          <div class="form-section">
+            <form id="vote-form">
+              <select id="vote-course" required>
+                <option value="">강의 선택</option>
+              </select>
+              <input type="text" id="vote-title" placeholder="투표 제목" required>
+              <textarea id="vote-description" placeholder="설명" rows="3"></textarea>
+              <input type="number" id="vote-week" placeholder="공강 주차 (예: 3)" min="1" required>
+              <input type="date" id="vote-makeup-date" placeholder="보강일 (선택)">
+              <button type="submit" class="btn btn-primary">생성</button>
+            </form>
+          </div>
+        </div>
+        <div>
+          <h2>투표 진행 결과</h2>
+          <div class="form-section">
+            <button id="vote-refresh-btn" class="btn btn-primary" style="margin-bottom: 12px;">새로고침</button>
+            <div id="votes-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 보고서 -->
+    <div id="reports" class="tab-content">
+      <h2>출석/위험군 보고서</h2>
+      <div class="report-section">
+        <div class="report-filters">
+          <select id="inst-report-course-select">
             <option value="">강의 선택</option>
           </select>
-          <input type="text" id="vote-title" placeholder="투표 제목" required>
-          <textarea id="vote-description" placeholder="설명" rows="3"></textarea>
-          <input type="number" id="vote-week" placeholder="공강 주차 (예: 3)" min="1" required>
-          <input type="date" id="vote-makeup-date" placeholder="보강일 (선택)">
-          <button type="submit" class="btn btn-primary">생성</button>
-        </form>
-      </div>
-      <!-- 보고서 -->
-      <div id="reports" class="tab-content">
-        <h2>출석/위험군 보고서</h2>
-        <div class="report-section">
-          <div class="report-filters">
-            <select id="inst-report-course-select">
-              <option value="">강의 선택</option>
-            </select>
-            <input type="number" id="inst-report-week" placeholder="주차 (선택)">
-            <input type="date" id="inst-report-from" placeholder="시작일">
-            <input type="date" id="inst-report-to" placeholder="종료일">
-            <button id="inst-load-report-btn" class="btn btn-primary">지표 조회</button>
-          </div>
-          <div id="inst-attendance-report"></div>
-          <div id="inst-risk-report"></div>
+          <input type="number" id="inst-report-week" placeholder="주차 (선택)">
+          <input type="date" id="inst-report-from" placeholder="시작일">
+          <input type="date" id="inst-report-to" placeholder="종료일">
+          <button id="inst-load-report-btn" class="btn btn-primary">지표 조회</button>
         </div>
+        <div id="inst-attendance-report"></div>
+        <div id="inst-risk-report"></div>
       </div>
     </div>
   </div>

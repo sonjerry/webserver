@@ -159,7 +159,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     else if (btn.dataset.tab === 'messages') {
       loadChatRooms();
     }
-    else if (btn.dataset.tab === 'votes') loadCoursesForSelect('vote-course');
+    else if (btn.dataset.tab === 'votes') {
+      loadCoursesForSelect('vote-course');
+      loadVotes();
+    }
     else if (btn.dataset.tab === 'reports') initInstructorReports();
   });
 });
@@ -1364,10 +1367,94 @@ document.getElementById('vote-form').addEventListener('submit', async (e) => {
     });
     alert(`투표가 생성되었습니다. ${result.notification_count}명에게 알림이 전송되었습니다.`);
     document.getElementById('vote-form').reset();
+    loadVotes();
   } catch (err) {
     alert('투표 생성 실패: ' + err.message);
   }
 });
+
+// 공강 투표 목록 및 결과 조회 (교원용)
+async function loadVotes() {
+  try {
+    const votes = await apiCall('/instructor/votes');
+    const list = document.getElementById('votes-list');
+    if (!list) return;
+    
+    if (!votes || votes.length === 0) {
+      list.innerHTML = '<p>생성된 공강 투표가 없습니다.</p>';
+      return;
+    }
+    
+    list.innerHTML = votes.map(vote => {
+      const weekText = vote.week_number
+        ? `${vote.week_number}주차`
+        : (vote.vote_date ? vote.vote_date : '주차 정보 없음');
+      
+      const yesCount = vote.yes_count || 0;
+      const noCount = vote.no_count || 0;
+      const totalStudents = vote.total_students || 0;
+      const respondedCount = vote.responded_count || 0;
+      const pendingCount = totalStudents - respondedCount;
+      const responseRate = totalStudents > 0 ? ((respondedCount / totalStudents) * 100).toFixed(1) : 0;
+      
+      const isClosed = vote.is_closed === 1 || vote.is_closed === true;
+      const statusText = isClosed ? '마감됨' : '진행 중';
+      const statusColor = isClosed ? '#6b7280' : '#10b981';
+      
+      return `
+        <div class="list-item" style="flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 16px; border: 1px solid #e5e7eb; border-radius: 8px;">
+          <div style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+              <div>
+                <strong>${vote.course_title}</strong> - ${weekText}
+                <br>
+                <span style="font-weight: 600; font-size: 1.1rem;">${vote.title}</span>
+                ${vote.description ? `<br><small style="color: #6b7280;">${vote.description}</small>` : ''}
+              </div>
+              <span style="color: ${statusColor}; font-weight: 600; font-size: 0.9rem;">${statusText}</span>
+            </div>
+            ${vote.vote_date ? `<div style="font-size: 0.85rem; color: #6b7280; margin-bottom: 8px;">투표일: ${vote.vote_date}</div>` : ''}
+          </div>
+          <div style="width: 100%; padding: 12px; background: #f9fafb; border-radius: 6px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+              <div style="text-align: center; padding: 8px; background: #dcfce7; border-radius: 6px;">
+                <div style="font-size: 0.85rem; color: #166534; margin-bottom: 4px;">찬성</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #16a34a;">${yesCount}</div>
+              </div>
+              <div style="text-align: center; padding: 8px; background: #fee2e2; border-radius: 6px;">
+                <div style="font-size: 0.85rem; color: #991b1b; margin-bottom: 4px;">반대</div>
+                <div style="font-size: 1.5rem; font-weight: 700; color: #ef4444;">${noCount}</div>
+              </div>
+            </div>
+            <div style="font-size: 0.9rem; color: #4b5563; text-align: center;">
+              전체 ${totalStudents}명 중 ${respondedCount}명 응답 (${responseRate}%)
+              ${pendingCount > 0 ? `<br><span style="color: #6b7280;">미응답: ${pendingCount}명</span>` : ''}
+            </div>
+            ${yesCount + noCount > 0 ? `
+              <div style="margin-top: 8px; height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;">
+                <div style="display: flex; height: 100%;">
+                  <div style="background: #16a34a; width: ${((yesCount / (yesCount + noCount)) * 100).toFixed(1)}%;"></div>
+                  <div style="background: #ef4444; width: ${((noCount / (yesCount + noCount)) * 100).toFixed(1)}%;"></div>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+          <div style="font-size: 0.8rem; color: #9ca3af;">
+            생성일: ${new Date(vote.created_at).toLocaleString('ko-KR')}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('투표 목록 로드 실패:', err);
+    const list = document.getElementById('votes-list');
+    if (list) {
+      list.innerHTML = '<p>투표 목록을 불러올 수 없습니다.</p>';
+    }
+  }
+}
+
+document.getElementById('vote-refresh-btn').addEventListener('click', loadVotes);
 
 // 이의제기 목록 조회
 async function loadAppeals() {
