@@ -1,0 +1,804 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f7fb;
+  color: #222;
+}
+
+.app-container {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.app-header h1 {
+  font-size: 1.6rem;
+}
+
+.app-main {
+  display: grid;
+  gap: 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.card h2 {
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 12px;
+}
+
+label {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+input,
+select {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccd0dd;
+  font-size: 0.95rem;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 8px 14px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.btn-primary {
+  background-color: #2563eb;
+  color: white;
+}
+
+.btn-secondary {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.btn-primary:hover {
+  background-color: #1d4ed8;
+}
+
+.btn-secondary:hover {
+  background-color: #d1d5db;
+}
+
+.hint-text {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+/* 관리자 대시보드 */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+header h1 {
+  font-size: 1.8rem;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+}
+
+.tab-btn:hover {
+  color: #2563eb;
+}
+
+.tab-btn.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+}
+
+.tab-content {
+  display: none;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.form-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.form-section h3 {
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.form-section form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.list-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.list-section h3 {
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+}
+
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.list-item > div {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+}
+
+.btn-danger {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
+.report-section {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.report-card {
+  background: #f9fafb;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.report-card h3 {
+  margin-bottom: 12px;
+  font-size: 1rem;
+  color: #374151;
+}
+
+.report-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.report-card li {
+  padding: 4px 0;
+  color: #6b7280;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* 공통 모달 */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.modal.open {
+  display: flex;
+}
+
+.modal-card {
+  background: #fff;
+  padding: 20px 24px;
+  border-radius: 10px;
+  max-height: 80vh;
+  width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: 0 15px 40px rgba(15, 23, 42, 0.18);
+}
+
+.modal-card-wide {
+  width: 720px;
+  max-width: 90vw;
+}
+
+.modal-title {
+  margin: 0 0 4px 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.modal-scroll-box {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* 과목 관리 레이아웃 */
+.courses-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.1fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .courses-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+#course-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+#course-schedule-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.schedule-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.schedule-day-label {
+  min-width: 72px;
+}
+
+.course-student-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.selected-students-summary-text {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.course-list-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.course-list-item:hover {
+  background-color: #f9fafb;
+}
+
+.course-list-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.course-list-item-title {
+  font-weight: 500;
+}
+
+.course-list-item-sub {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.course-detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.course-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 840px) {
+  .course-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.course-detail-section-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #374151;
+}
+
+.course-detail-meta {
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+
+.course-detail-meta p {
+  margin-bottom: 4px;
+}
+
+.course-detail-meta p:last-child {
+  margin-bottom: 0;
+}
+
+.course-detail-students {
+  font-size: 0.9rem;
+  color: #4b5563;
+}
+
+.course-detail-students ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 4px;
+}
+
+.course-detail-students li {
+  padding: 2px 0;
+}
+
+/* 교원 담당 강의 레이아웃 */
+.instructor-courses-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.7fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .instructor-courses-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.course-detail-meta-text {
+  font-size: 0.9rem;
+  color: #4b5563;
+  line-height: 1.6;
+  margin-bottom: 12px;
+}
+
+.attendance-method-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.attendance-method-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.attendance-method-options label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.9rem;
+}
+
+
+/* 교원 출석 현황 레이아웃 */
+.attendance-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.6fr);
+  gap: 20px;
+  align-items: flex-start;
+}
+
+@media (max-width: 900px) {
+  .attendance-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.attendance-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attendance-session-list {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  background-color: #f9fafb;
+}
+
+.attendance-session-item {
+  padding: 10px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.attendance-session-item:last-child {
+  border-bottom: none;
+}
+
+.attendance-session-item:hover {
+  background-color: #eef2ff;
+}
+
+.attendance-session-item.active {
+  background-color: #e0ebff;
+}
+
+.attendance-session-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.attendance-session-item-title {
+  font-weight: 500;
+}
+
+.attendance-session-item-sub {
+  color: #6b7280;
+  font-size: 0.8rem;
+}
+
+.attendance-students-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.attendance-students-table th,
+.attendance-students-table td {
+  padding: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.attendance-students-table th {
+  background-color: #f9fafb;
+  font-weight: 500;
+}
+
+.attendance-status-select {
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #d1d5db;
+  font-size: 0.85rem;
+}
+
+.attendance-student-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.attendance-save-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* 강의별 아코디언 스타일 */
+.course-accordion {
+  background: #fff;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+.course-accordion-header {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.2s;
+}
+
+.course-accordion-header:hover {
+  background: #f3f4f6;
+}
+
+.course-accordion-content {
+  padding: 0;
+}
+
+.session-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 12px 16px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.2s;
+}
+
+.session-item:last-child {
+  border-bottom: none;
+}
+
+.session-item:hover {
+  background: #fafafa;
+}
+
+.session-makeup {
+  background: #fef2f2;
+  border-left: 4px solid #dc2626;
+}
+
+.session-makeup:hover {
+  background: #fee2e2;
+}
+
+/* 전자 출결 출석 현황 팝업 */
+.electronic-attendance-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 300px;
+  max-height: 60vh;
+}
+
+.electronic-student-item:last-child {
+  border-bottom: none;
+}
+
+/* 사용자 관리 역할별 탭 */
+.user-role-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.user-role-tab {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #6b7280;
+  transition: all 0.2s;
+  margin-bottom: -2px;
+}
+
+.user-role-tab:hover {
+  color: #374151;
+  background: #f9fafb;
+}
+
+.user-role-tab.active {
+  color: #2563eb;
+  border-bottom-color: #2563eb;
+  font-weight: 600;
+}
+
+.user-list-section {
+  display: none;
+}
+
+.user-list-section.active {
+  display: block;
+}
+
+/* 감사 로그 스타일 */
+.audit-logs-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.audit-logs-filters {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.audit-logs-filters .filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.audit-logs-filters .filter-group label {
+  font-size: 0.85rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.audit-logs-filters select,
+.audit-logs-filters input[type="date"] {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccd0dd;
+  font-size: 0.9rem;
+}
+
+.audit-logs-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  margin-top: 12px;
+}
+
+.audit-logs-table th,
+.audit-logs-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5e7eb;
+  text-align: left;
+}
+
+.audit-logs-table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+  position: sticky;
+  top: 0;
+}
+
+.audit-logs-table tbody tr:hover {
+  background-color: #f9fafb;
+}
+
+.audit-action-type {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+.audit-description {
+  max-width: 400px;
+  word-wrap: break-word;
+  line-height: 1.4;
+}
+
+.audit-logs-pagination {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.pagination button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.pagination button:hover {
+  background: #f3f4f6;
+}
+
+.pagination-current {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.pagination-info {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+

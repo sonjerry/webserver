@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 대시보드 - 출석 관리 시스템</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>관리자 대시보드</h1>
+      <button id="logout-btn" class="btn btn-secondary">로그아웃</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="departments">학과 관리</button>
+      <button class="tab-btn" data-tab="semesters">학기 관리</button>
+      <button class="tab-btn" data-tab="courses">과목 관리</button>
+      <button class="tab-btn" data-tab="users">사용자 관리</button>
+      <button class="tab-btn" data-tab="audit-logs">감사 로그</button>
+      <button class="tab-btn" data-tab="reports">시스템 리포트</button>
+    </nav>
+
+    <!-- 학과 관리 -->
+    <div id="departments" class="tab-content active">
+      <h2>학과 관리</h2>
+      <div class="form-section">
+        <h3>학과 추가</h3>
+        <form id="department-form">
+          <input type="text" id="dept-name" placeholder="학과명" required>
+          <input type="text" id="dept-code" placeholder="학과 코드" required>
+          <button type="submit" class="btn btn-primary">추가</button>
+        </form>
+      </div>
+      <div class="list-section">
+        <h3>학과 목록</h3>
+        <div id="department-list"></div>
+      </div>
+    </div>
+
+    <!-- 학기 관리 -->
+    <div id="semesters" class="tab-content">
+      <h2>학기 관리</h2>
+      <div class="form-section">
+        <h3>학기 추가</h3>
+        <form id="semester-form">
+          <input type="number" id="sem-year" placeholder="연도 (예: 2025)" required>
+          <select id="sem-semester" required>
+            <option value="">학기 선택</option>
+            <option value="1">1학기</option>
+            <option value="2">2학기</option>
+            <option value="SUMMER">하계</option>
+            <option value="WINTER">동계</option>
+          </select>
+          <input type="date" id="sem-start" required>
+          <input type="date" id="sem-end" required>
+          <button type="submit" class="btn btn-primary">추가</button>
+        </form>
+      </div>
+      <div class="list-section">
+        <h3>학기 목록</h3>
+        <div id="semester-list"></div>
+      </div>
+    </div>
+
+    <!-- 과목 관리 -->
+    <div id="courses" class="tab-content">
+      <h2>과목 관리</h2>
+      <div class="courses-layout">
+        <div class="form-section">
+          <h3>과목 추가</h3>
+          <form id="course-form">
+            <input type="text" id="course-title" placeholder="과목명" required>
+            <select id="course-instructor" required>
+              <option value="">담당교원 선택</option>
+            </select>
+            <select id="course-department" required>
+              <option value="">학과 선택</option>
+            </select>
+            <select id="course-semester" required>
+              <option value="">학기 선택</option>
+            </select>
+            <div class="form-group">
+              <label>요일 / 시간 (10분 단위)</label>
+              <div id="course-schedule-list">
+                <div class="schedule-row" data-day="1">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="1"> 월요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="2">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="2"> 화요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="3">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="3"> 수요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="4">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="4"> 목요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="5">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="5"> 금요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="6">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="6"> 토요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+                <div class="schedule-row" data-day="0">
+                  <label class="schedule-day-label">
+                    <input type="checkbox" class="schedule-day" value="0"> 일요일
+                  </label>
+                  <select class="schedule-start"></select>
+                  <span>~</span>
+                  <select class="schedule-end"></select>
+                </div>
+              </div>
+            </div>
+            <input type="text" id="course-section" placeholder="분반 (선택)">
+            <div class="form-group">
+              <label>수강생 선택 (선택)</label>
+              <div class="course-student-picker">
+                <button type="button" id="open-student-modal" class="btn btn-secondary">수강생 선택</button>
+                <span id="selected-students-summary" class="selected-students-summary-text">선택 안 함</span>
+              </div>
+            </div>
+            <button type="submit" class="btn btn-primary">추가</button>
+          </form>
+        </div>
+        <div class="list-section">
+          <h3>과목 목록</h3>
+          <div id="course-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 수강생 선택 모달 -->
+    <div id="student-modal" class="modal">
+      <div class="modal-card">
+        <h3 class="modal-title">수강생 선택</h3>
+        <div id="course-students-list" class="modal-scroll-box"></div>
+        <div class="modal-actions">
+          <button type="button" id="student-modal-cancel" class="btn btn-secondary">취소</button>
+          <button type="button" id="student-modal-apply" class="btn btn-primary">선택 적용</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 과목 상세 모달 -->
+    <div id="course-detail-modal" class="modal">
+      <div class="modal-card modal-card-wide">
+        <h3 class="modal-title">과목 상세 정보</h3>
+        <div id="course-detail-body" class="course-detail-body"></div>
+        <div class="modal-actions">
+          <button type="button" id="course-detail-close" class="btn btn-secondary">닫기</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 과목 수정 모달 -->
+    <div id="course-edit-modal" class="modal">
+      <div class="modal-card modal-card-wide">
+        <h3 class="modal-title">과목 수정</h3>
+        <form id="course-edit-form">
+          <input type="text" id="course-edit-title" placeholder="과목명" required>
+          <select id="course-edit-instructor" required>
+            <option value="">담당교원 선택</option>
+          </select>
+          <select id="course-edit-department" required>
+            <option value="">학과 선택</option>
+          </select>
+          <select id="course-edit-semester" required>
+            <option value="">학기 선택</option>
+          </select>
+          <div class="form-group">
+            <label>요일 / 시간 (10분 단위)</label>
+            <div id="course-edit-schedule-list">
+              <div class="schedule-row" data-day="1">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="1"> 월요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="2">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="2"> 화요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="3">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="3"> 수요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="4">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="4"> 목요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="5">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="5"> 금요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="6">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="6"> 토요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+              <div class="schedule-row" data-day="0">
+                <label class="schedule-day-label">
+                  <input type="checkbox" class="schedule-day" value="0"> 일요일
+                </label>
+                <select class="schedule-start"></select>
+                <span>~</span>
+                <select class="schedule-end"></select>
+              </div>
+            </div>
+          </div>
+          <input type="text" id="course-edit-section" placeholder="분반 (선택)">
+          <div class="form-group">
+            <label>수강생 선택 (선택)</label>
+            <div class="course-student-picker">
+              <button type="button" id="open-student-edit-modal" class="btn btn-secondary">수강생 선택</button>
+              <span id="selected-students-edit-summary" class="selected-students-summary-text">선택 안 함</span>
+            </div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" id="course-edit-cancel" class="btn btn-secondary">취소</button>
+            <button type="submit" class="btn btn-primary">수정</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- 수정용 수강생 선택 모달 -->
+    <div id="student-edit-modal" class="modal">
+      <div class="modal-card">
+        <h3 class="modal-title">수강생 선택</h3>
+        <div id="course-students-edit-list" class="modal-scroll-box"></div>
+        <div class="modal-actions">
+          <button type="button" id="student-edit-modal-cancel" class="btn btn-secondary">취소</button>
+          <button type="button" id="student-edit-modal-apply" class="btn btn-primary">선택 적용</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 사용자 관리 -->
+    <div id="users" class="tab-content">
+      <h2>사용자 관리</h2>
+      <div class="form-section">
+        <h3>사용자 추가</h3>
+        <form id="user-form">
+          <input type="email" id="user-email" placeholder="이메일" required>
+          <input type="text" id="user-name" placeholder="이름">
+          <select id="user-role" required>
+            <option value="">역할 선택</option>
+            <option value="ADMIN">관리자</option>
+            <option value="INSTRUCTOR">교원</option>
+            <option value="STUDENT">수강생</option>
+          </select>
+          <button type="submit" class="btn btn-primary">추가</button>
+        </form>
+      </div>
+      <div class="list-section">
+        <div class="user-role-tabs">
+          <button class="user-role-tab active" data-role="ADMIN">관리자</button>
+          <button class="user-role-tab" data-role="INSTRUCTOR">교원</button>
+          <button class="user-role-tab" data-role="STUDENT">수강생</button>
+        </div>
+        <div id="user-list-container">
+          <div id="user-list-admin" class="user-list-section active"></div>
+          <div id="user-list-instructor" class="user-list-section"></div>
+          <div id="user-list-student" class="user-list-section"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 감사 로그 -->
+    <div id="audit-logs" class="tab-content">
+      <h2>감사 로그</h2>
+      <div class="audit-logs-section">
+        <div class="audit-logs-filters">
+          <div class="filter-group">
+            <label>작업 유형:</label>
+            <select id="audit-action-type">
+              <option value="">전체</option>
+              <option value="DEPARTMENT_CREATED">학과 생성</option>
+              <option value="DEPARTMENT_UPDATED">학과 수정</option>
+              <option value="DEPARTMENT_DELETED">학과 삭제</option>
+              <option value="SEMESTER_CREATED">학기 생성</option>
+              <option value="SEMESTER_UPDATED">학기 수정</option>
+              <option value="SEMESTER_DELETED">학기 삭제</option>
+              <option value="COURSE_CREATED">과목 생성</option>
+              <option value="COURSE_UPDATED">과목 수정</option>
+              <option value="COURSE_DELETED">과목 삭제</option>
+              <option value="USER_CREATED">사용자 생성</option>
+              <option value="USER_UPDATED">사용자 수정</option>
+              <option value="USER_DELETED">사용자 삭제</option>
+              <option value="ATTENDANCE_UPDATED">출석 변경</option>
+              <option value="EXCUSE_CREATED">공결 신청 생성</option>
+              <option value="EXCUSE_APPROVED">공결 승인</option>
+              <option value="EXCUSE_REJECTED">공결 반려</option>
+              <option value="APPEAL_CREATED">이의제기 생성</option>
+              <option value="APPEAL_RESOLVED">이의제기 처리</option>
+              <option value="APPEAL_REJECTED">이의제기 거부</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>시작일:</label>
+            <input type="date" id="audit-start-date">
+          </div>
+          <div class="filter-group">
+            <label>종료일:</label>
+            <input type="date" id="audit-end-date">
+          </div>
+          <button id="audit-filter-btn" class="btn btn-primary">필터 적용</button>
+          <button id="audit-refresh-btn" class="btn btn-secondary">새로고침</button>
+        </div>
+        <div class="audit-logs-list" id="audit-logs-list">
+          <p>로딩 중...</p>
+        </div>
+        <div class="audit-logs-pagination" id="audit-logs-pagination"></div>
+      </div>
+    </div>
+
+      <!-- 시스템 리포트 + 출석/위험군 리포트 -->
+      <div id="reports" class="tab-content">
+        <h2>리포트</h2>
+        <div class="report-section">
+          <h3>시스템 리포트</h3>
+          <button id="refresh-report-btn" class="btn btn-primary">리포트 새로고침</button>
+          <div id="report-content"></div>
+        </div>
+        <div class="report-section">
+          <h3>출석 / 공결 / 위험군 리포트</h3>
+          <div class="report-filters">
+            <select id="report-course-select">
+              <option value="">과목 선택</option>
+            </select>
+            <input type="number" id="report-week" placeholder="주차 (선택)">
+            <input type="date" id="report-from" placeholder="시작일">
+            <input type="date" id="report-to" placeholder="종료일">
+            <button id="load-attendance-report-btn" class="btn btn-secondary">지표 조회</button>
+          </div>
+          <div id="admin-attendance-report"></div>
+          <div id="admin-risk-report"></div>
+        </div>
+      </div>
+  </div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>
+

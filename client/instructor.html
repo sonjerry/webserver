@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교원 대시보드 - 출석 관리 시스템</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>교원 대시보드</h1>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button id="notification-btn" class="btn btn-secondary" style="position: relative;">
+          알림
+          <span id="notification-badge" style="display: none; position: absolute; top: -6px; right: -6px; background: #ef4444; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 0.7rem; display: flex; align-items: center; justify-content: center;">0</span>
+        </button>
+        <button id="logout-btn" class="btn btn-secondary">로그아웃</button>
+      </div>
+    </header>
+    
+    <!-- 알림 모달 -->
+    <div id="notification-modal" class="modal">
+      <div class="modal-card modal-card-wide">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+          <h3 class="modal-title">알림</h3>
+          <div>
+            <button id="mark-all-read-btn" class="btn btn-small btn-secondary" style="margin-right: 8px;">모두 읽음</button>
+            <button id="close-notification-modal" class="btn btn-small btn-secondary">닫기</button>
+          </div>
+        </div>
+        <div id="notification-list" class="modal-scroll-box" style="min-height: 400px; max-height: 60vh;"></div>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="courses">담당 강의</button>
+      <button class="tab-btn" data-tab="attendance">출석 현황</button>
+      <button class="tab-btn" data-tab="excuses">공결 관리</button>
+      <button class="tab-btn" data-tab="appeals">이의제기</button>
+      <button class="tab-btn" data-tab="announcements">수업 알림</button>
+      <button class="tab-btn" data-tab="messages">메시지</button>
+      <button class="tab-btn" data-tab="votes">공강 투표</button>
+      <button class="tab-btn" data-tab="reports">보고서</button>
+    </nav>
+
+    <!-- 담당 강의 -->
+    <div id="courses" class="tab-content active">
+      <h2>담당 강의</h2>
+      <div class="instructor-courses-layout">
+        <div class="list-section">
+          <h3>강의 목록</h3>
+          <div id="courses-list"></div>
+        </div>
+        <div class="list-section">
+          <h3>출석 진행</h3>
+          <div id="course-detail-panel">
+            <p>왼쪽에서 강의를 선택하면 출석 진행 옵션이 표시됩니다.</p>
+          </div>
+        </div>
+      </div>
+      <div class="list-section" style="margin-top: 16px;">
+        <h3>나의 강의 일정 달력</h3>
+        <div id="instructor-calendar"></div>
+      </div>
+    </div>
+
+    <!-- 출석 현황 -->
+    <div id="attendance" class="tab-content">
+      <h2>출석 현황</h2>
+      <div class="attendance-layout">
+        <div class="form-section">
+          <h3>강의 및 주차 선택</h3>
+          <div class="attendance-filter">
+            <select id="attendance-course-select">
+              <option value="">강의 선택</option>
+            </select>
+            <div id="attendance-session-list" class="attendance-session-list">
+              <!-- 주차/날짜 리스트 -->
+            </div>
+          </div>
+        </div>
+        <div class="list-section">
+          <h3>학생 출석 현황</h3>
+          <div id="attendance-student-panel">
+            <p>왼쪽에서 강의와 주차를 먼저 선택해주세요.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 공결 관리 -->
+    <div id="excuses" class="tab-content">
+      <h2>공결 관리</h2>
+      <div class="form-section">
+        <select id="excuse-course-filter">
+          <option value="">전체 강의</option>
+        </select>
+        <select id="excuse-filter">
+          <option value="">전체 상태</option>
+          <option value="PENDING">대기 중</option>
+          <option value="APPROVED">승인됨</option>
+          <option value="REJECTED">반려됨</option>
+        </select>
+        <button id="excuse-refresh-btn" class="btn btn-primary">새로고침</button>
+      </div>
+      <div id="excuses-list"></div>
+    </div>
+
+    <!-- 이의제기 -->
+    <div id="appeals" class="tab-content">
+      <h2>출결 이의제기 관리</h2>
+      <div class="form-section">
+        <select id="appeal-status-filter">
+          <option value="">전체 상태</option>
+          <option value="PENDING">대기 중</option>
+          <option value="REVIEWED">검토 중</option>
+          <option value="RESOLVED">해결됨</option>
+          <option value="REJECTED">거부됨</option>
+        </select>
+        <button id="appeal-refresh-btn" class="btn btn-primary">새로고침</button>
+      </div>
+      <div id="appeals-list"></div>
+    </div>
+
+    <!-- 수업 알림 -->
+    <div id="announcements" class="tab-content">
+      <h2>수업 알림 작성</h2>
+      <div class="form-section">
+        <form id="announcement-form">
+          <select id="announcement-course" required>
+            <option value="">강의 선택</option>
+          </select>
+          <input type="text" id="announcement-title" placeholder="제목" required>
+          <textarea id="announcement-content" placeholder="내용" rows="5" required></textarea>
+          <button type="submit" class="btn btn-primary">전송</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- 메시지 -->
+    <div id="messages" class="tab-content">
+      <h2>메시지</h2>
+      <div class="chat-container" style="display: grid; grid-template-columns: 300px 1fr; gap: 20px; height: 600px;">
+        <!-- 채팅방 목록 -->
+        <div class="chat-room-list" style="border: 1px solid #e5e7eb; border-radius: 8px; overflow-y: auto; background: #fff;">
+          <div style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">채팅방</div>
+          <div id="chat-rooms-list" style="padding: 8px;"></div>
+        </div>
+        <!-- 채팅 내용 -->
+        <div class="chat-content" style="display: flex; flex-direction: column; border: 1px solid #e5e7eb; border-radius: 8px; background: #fff;">
+          <div id="chat-header" style="padding: 12px; border-bottom: 1px solid #e5e7eb; font-weight: 600;">
+            채팅방을 선택하세요
+          </div>
+          <div id="chat-messages" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px;"></div>
+          <div id="chat-input-area" style="padding: 12px; border-top: 1px solid #e5e7eb; display: none;">
+            <form id="message-form" style="display: flex; gap: 8px;">
+              <textarea id="message-content" placeholder="메시지를 입력하세요..." rows="2" style="flex: 1; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px; resize: none;" required></textarea>
+              <button type="submit" class="btn btn-primary" style="align-self: flex-end;">전송</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 공강 투표 -->
+    <div id="votes" class="tab-content">
+      <h2>공강 투표 생성</h2>
+      <div class="form-section">
+        <form id="vote-form">
+          <select id="vote-course" required>
+            <option value="">강의 선택</option>
+          </select>
+          <input type="text" id="vote-title" placeholder="투표 제목" required>
+          <textarea id="vote-description" placeholder="설명" rows="3"></textarea>
+          <input type="number" id="vote-week" placeholder="공강 주차 (예: 3)" min="1" required>
+          <input type="date" id="vote-makeup-date" placeholder="보강일 (선택)">
+          <button type="submit" class="btn btn-primary">생성</button>
+        </form>
+      </div>
+      <!-- 보고서 -->
+      <div id="reports" class="tab-content">
+        <h2>출석/위험군 보고서</h2>
+        <div class="report-section">
+          <div class="report-filters">
+            <select id="inst-report-course-select">
+              <option value="">강의 선택</option>
+            </select>
+            <input type="number" id="inst-report-week" placeholder="주차 (선택)">
+            <input type="date" id="inst-report-from" placeholder="시작일">
+            <input type="date" id="inst-report-to" placeholder="종료일">
+            <button id="inst-load-report-btn" class="btn btn-primary">지표 조회</button>
+          </div>
+          <div id="inst-attendance-report"></div>
+          <div id="inst-risk-report"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인증번호/전자출결 출석 현황 팝업 -->
+  <div id="attendance-session-modal" class="modal">
+    <div class="modal-card modal-card-wide">
+      <h3 id="attendance-session-title" class="modal-title">출석 현황</h3>
+      <div id="attendance-session-body" class="attendance-session-body"></div>
+      <div class="modal-actions">
+        <button type="button" id="attendance-session-close" class="btn btn-danger">닫기 (세션 종료)</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/instructor.js"></script>
+</body>
+</html>
