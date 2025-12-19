@@ -27,17 +27,9 @@ router.post('/login', async (req, res) => {
 
     const token = signToken(payload);
 
-    // HttpOnly 쿠키에 저장 (프론트에서 편의를 위해 응답에도 포함)
-    // path를 명시적으로 설정하여 쿠키 범위 명확화
-    res
-      .cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000, // 24시간
-        secure: process.env.NODE_ENV === 'production',
-        path: '/' // 명시적으로 경로 설정
-      })
-      .json({ token, user: payload });
+    // localStorage만 사용 (시크릿 모드에서 탭 간 간섭 방지)
+    // HttpOnly 쿠키는 제거하고 클라이언트에서만 관리
+    res.json({ token, user: payload });
   } catch (err) {
     console.error('Login error:', err);
     console.error('Error details:', {
@@ -67,15 +59,8 @@ router.post('/refresh', authenticateToken, async (req, res) => {
 
     const token = signToken(payload);
 
-    res
-      .cookie('token', token, {
-        httpOnly: true,
-        sameSite: 'lax',
-        maxAge: 24 * 60 * 60 * 1000,
-        secure: process.env.NODE_ENV === 'production',
-        path: '/' // 명시적으로 경로 설정
-      })
-      .json({ token, user: payload });
+    // localStorage만 사용 (시크릿 모드에서 탭 간 간섭 방지)
+    res.json({ token, user: payload });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '토큰 갱신 중 오류가 발생했습니다.' });
@@ -127,13 +112,7 @@ router.get('/me', authenticateToken, async (req, res) => {
 
 // POST /auth/logout
 router.post('/logout', (req, res) => {
-  // 쿠키 삭제 시 동일한 옵션으로 설정해야 함
-  res.clearCookie('token', {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/'
-  });
+  // localStorage만 사용하므로 서버에서 쿠키 삭제 불필요
   res.json({ message: '로그아웃 되었습니다.' });
 });
 

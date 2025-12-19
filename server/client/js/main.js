@@ -115,8 +115,7 @@ if (loginForm) {
       const data = await res.json();
       const { token, user } = data;
 
-      // localStorage에만 저장 (서버가 HttpOnly 쿠키를 자동으로 설정함)
-      // 클라이언트 쿠키는 설정하지 않음 - 서버의 HttpOnly 쿠키와 충돌 방지
+      // localStorage에만 저장 (시크릿 모드에서 탭 간 간섭 방지)
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
 

@@ -1,13 +1,10 @@
 const { verifyToken } = require('../config/jwt');
 
 // JWT 토큰 검증 미들웨어
-// 1순위: Authorization 헤더의 Bearer 토큰
-// 2순위: HttpOnly 쿠키의 token 값
+// Authorization 헤더의 Bearer 토큰만 사용 (localStorage 기반, 시크릿 모드에서 탭 간 간섭 방지)
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
-  const headerToken = authHeader && authHeader.split(' ')[1];
-  const cookieToken = req.cookies && req.cookies.token;
-  const token = headerToken || cookieToken;
+  const token = authHeader && authHeader.split(' ')[1];
 
   if (!token) {
     return res.status(401).json({ message: '인증 토큰이 필요합니다.' });

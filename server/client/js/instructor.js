@@ -1,6 +1,6 @@
 const API_BASE = window.location.origin;
 
-// 토큰 가져오기 (localStorage만 사용, HttpOnly 쿠키는 JavaScript에서 읽을 수 없음)
+// 토큰 가져오기 (localStorage만 사용, 시크릿 모드에서 탭 간 간섭 방지)
 function getAuthToken() {
   return localStorage.getItem('token') || null;
 }
@@ -21,9 +21,9 @@ function normalizeDate(dateStr) {
   return match ? match[1] : dateStr;
 }
 
-// 쿠키 + Authorization 기반 로그인 확인
+// Authorization 헤더 기반 로그인 확인
 async function checkAuth() {
-  // 매번 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  // 매번 최신 토큰 사용 (localStorage)
   token = getAuthToken();
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
@@ -46,7 +46,7 @@ async function checkAuth() {
       updateUserInfoDisplay();
       return true;
     } else {
-      // 인증 실패 시 localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
+      // 인증 실패 시 localStorage 정리
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = 'index.html';
@@ -54,10 +54,9 @@ async function checkAuth() {
     }
   } catch (err) {
     console.error('인증 확인 실패:', err);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    deleteCookie('token');
-    window.location.href = 'index.html';
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
     return false;
   }
 }
@@ -92,7 +91,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
   } catch (err) {
     console.error('로그아웃 요청 실패:', err);
   }
-  // localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
+  // localStorage 정리
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   window.location.href = 'index.html';
@@ -100,7 +99,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 
 // API 호출 헬퍼
 async function apiCall(endpoint, options = {}) {
-  // 매 호출 시 최신 토큰 사용 (localStorage 우선, 쿠키 차선)
+  // 매 호출 시 최신 토큰 사용 (localStorage)
   token = getAuthToken();
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
@@ -113,7 +112,7 @@ async function apiCall(endpoint, options = {}) {
   });
   if (!response.ok) {
     if (response.status === 401) {
-      // 인증 실패 시 localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
+      // 인증 실패 시 localStorage 정리
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = 'index.html';
@@ -130,7 +129,7 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     // 다른 탭으로 이동할 때 진행 중인 출석 세션이 있으면 자동 마감
     if (currentOpenSessionId && btn.dataset.tab !== 'attendance' && btn.dataset.tab !== 'courses') {
-      // 백엔드에서 본문을 사용하지 않으므로 헤더 없이 호출 (쿠키 기반 인증 가정)
+      // 백엔드에서 본문을 사용하지 않으므로 헤더 없이 호출
       fetch(`${API_BASE}/sessions/${currentOpenSessionId}/close`, {
         method: 'POST',
         credentials: 'include'
