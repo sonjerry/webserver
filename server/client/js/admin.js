@@ -75,6 +75,22 @@ async function checkAuth() {
         return false;
       }
       
+      // 403: 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      if (status === 403) {
+        const errorData = await res.json().catch(() => ({ message: '권한이 없습니다.' }));
+        console.error('권한 오류:', errorData.message);
+        // 권한 없음은 리다이렉트하지 않고 에러만 표시
+        document.body.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+            <h2>권한 오류</h2>
+            <p>${errorData.message || '이 페이지에 접근할 권한이 없습니다.'}</p>
+            <p>올바른 계정으로 로그인해주세요.</p>
+            <button onclick="window.location.href='index.html'" style="margin-top: 20px; padding: 10px 20px;">로그인 페이지로</button>
+          </div>
+        `;
+        return false;
+      }
+      
       // 500: 서버 에러 (DB 연결 실패 등) - 에러 메시지 표시하고 리다이렉트 안 함
       if (status === 500) {
         const errorData = await res.json().catch(() => ({ message: '서버 오류가 발생했습니다.' }));
@@ -213,6 +229,11 @@ async function apiCall(endpoint, options = {}) {
         window.location.href = 'index.html';
       }
       throw new Error('인증이 만료되었습니다.');
+    }
+    if (response.status === 403) {
+      // 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      const error = await response.json().catch(() => ({ message: '권한이 없습니다.' }));
+      throw new Error(error.message || '권한이 없습니다.');
     }
     const error = await response.json().catch(() => ({ message: '요청 실패' }));
     throw new Error(error.message || '요청 실패');

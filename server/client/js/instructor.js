@@ -46,7 +46,34 @@ async function checkAuth() {
       updateUserInfoDisplay();
       return true;
     } else {
-      // 인증 실패 시 localStorage 정리
+      // 응답 상태 코드에 따라 처리
+      const status = res.status;
+      
+      // 401: 인증 실패 (토큰 없음/만료)
+      if (status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      // 403: 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      if (status === 403) {
+        const errorData = await res.json().catch(() => ({ message: '권한이 없습니다.' }));
+        console.error('권한 오류:', errorData.message);
+        // 권한 없음은 리다이렉트하지 않고 에러만 표시
+        document.body.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+            <h2>권한 오류</h2>
+            <p>${errorData.message || '이 페이지에 접근할 권한이 없습니다.'}</p>
+            <p>올바른 계정으로 로그인해주세요.</p>
+            <button onclick="window.location.href='index.html'" style="margin-top: 20px; padding: 10px 20px;">로그인 페이지로</button>
+          </div>
+        `;
+        return false;
+      }
+      
+      // 기타 에러 - 인증 실패로 처리
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = 'index.html';
@@ -101,12 +128,21 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 async function apiCall(endpoint, options = {}) {
   // 매 호출 시 최신 토큰 사용 (localStorage)
   token = getAuthToken();
+  
+  if (!token) {
+    // 토큰이 없으면 로그인 페이지로 리다이렉트
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+    throw new Error('인증 토큰이 없습니다.');
+  }
+  
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      'Authorization': `Bearer ${token}`,
       ...options.headers
     }
   });
@@ -118,7 +154,12 @@ async function apiCall(endpoint, options = {}) {
       window.location.href = 'index.html';
       return;
     }
-    const error = await response.json();
+    if (response.status === 403) {
+      // 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      const error = await response.json().catch(() => ({ message: '권한이 없습니다.' }));
+      throw new Error(error.message || '권한이 없습니다.');
+    }
+    const error = await response.json().catch(() => ({ message: '요청 실패' }));
     throw new Error(error.message || '요청 실패');
   }
   return response.json();
@@ -127,15 +168,7 @@ async function apiCall(endpoint, options = {}) {
 // 탭 전환
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    // 다른 탭으로 이동할 때 진행 중인 출석 세션이 있으면 자동 마감
-    if (currentOpenSessionId && btn.dataset.tab !== 'attendance' && btn.dataset.tab !== 'courses') {
-      // 백엔드에서 본문을 사용하지 않으므로 헤더 없이 호출
-      fetch(`${API_BASE}/sessions/${currentOpenSessionId}/close`, {
-        method: 'POST',
-        credentials: 'include'
-      }).catch(() => {});
-      currentOpenSessionId = null;
-    }
+    // 탭 전환 시 출석 세션은 유지 (페이지 이탈 시에만 마감)
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
@@ -326,6 +359,25 @@ function renderCourseDetailPanel(courseId) {
           attendance_method: method
         })
       });
+
+      // 팝업이 열려있지 않으면 다른 진행 중인 출석 세션들을 먼저 마감
+      const modal = document.getElementById('attendance-session-modal');
+      const isPopupOpen = modal && modal.classList.contains('open');
+      
+      if (!isPopupOpen) {
+        try {
+          const dashboard = await apiCall('/dashboard/instructor');
+          if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
+            // 현재 열려있는 세션들을 모두 마감 (현재 생성한 세션 제외)
+            const closePromises = dashboard.open_sessions
+              .filter(s => s.id !== created.id)
+              .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
+            await Promise.all(closePromises);
+          }
+        } catch (err) {
+          console.error('다른 세션 마감 실패:', err);
+        }
+      }
 
       // 호명/인증번호/전자출결 모두 출석을 열어줌
       await apiCall(`/sessions/${created.id}/open`, { method: 'POST' });
@@ -788,6 +840,25 @@ async function removeMakeupSession(courseId, weekNumber, sessionId) {
 // 출석 열기/일시정지/마감 (출석 현황 탭에서 사용)
 async function openSession(id) {
   try {
+    // 팝업이 열려있지 않으면 다른 진행 중인 출석 세션들을 먼저 마감
+    const modal = document.getElementById('attendance-session-modal');
+    const isPopupOpen = modal && modal.classList.contains('open');
+    
+    if (!isPopupOpen) {
+      try {
+        const dashboard = await apiCall('/dashboard/instructor');
+        if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
+          // 현재 열려있는 세션들을 모두 마감 (현재 열려있는 세션 제외)
+          const closePromises = dashboard.open_sessions
+            .filter(s => s.id !== id)
+            .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
+          await Promise.all(closePromises);
+        }
+      } catch (err) {
+        console.error('다른 세션 마감 실패:', err);
+      }
+    }
+    
     await apiCall(`/sessions/${id}/open`, { method: 'POST' });
     currentOpenSessionId = id;
     
@@ -1584,6 +1655,22 @@ let attendanceSessionInterval = null;
 let currentAttendanceSessionId = null;
 
 function openAttendanceSessionPopup(sessionId, courseTitle, weekNumber, sessionDate, attendanceMethod, authCode) {
+  // 팝업이 열릴 때 다른 진행 중인 출석 세션들을 먼저 마감
+  (async () => {
+    try {
+      const dashboard = await apiCall('/dashboard/instructor');
+      if (dashboard.open_sessions && dashboard.open_sessions.length > 0) {
+        // 현재 열려있는 세션들을 모두 마감 (현재 세션 제외)
+        const closePromises = dashboard.open_sessions
+          .filter(s => s.id !== sessionId)
+          .map(s => apiCall(`/sessions/${s.id}/close`, { method: 'POST' }).catch(() => {}));
+        await Promise.all(closePromises);
+      }
+    } catch (err) {
+      console.error('다른 세션 마감 실패:', err);
+    }
+  })();
+  
   currentAttendanceSessionId = sessionId;
   const modal = document.getElementById('attendance-session-modal');
   const body = document.getElementById('attendance-session-body');

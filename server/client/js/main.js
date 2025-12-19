@@ -19,11 +19,14 @@ async function checkAuthStatus() {
   }
   
   try {
+    // 매번 최신 토큰 사용 (localStorage)
+    const token = getAuthToken();
     const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
       credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
       },
     });
 

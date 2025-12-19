@@ -33,7 +33,34 @@ async function checkAuth() {
       updateUserInfoDisplay();
       return true;
     } else {
-      // 인증 실패 시 localStorage 정리
+      // 응답 상태 코드에 따라 처리
+      const status = res.status;
+      
+      // 401: 인증 실패 (토큰 없음/만료)
+      if (status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+        return false;
+      }
+      
+      // 403: 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      if (status === 403) {
+        const errorData = await res.json().catch(() => ({ message: '권한이 없습니다.' }));
+        console.error('권한 오류:', errorData.message);
+        // 권한 없음은 리다이렉트하지 않고 에러만 표시
+        document.body.innerHTML = `
+          <div style="padding: 20px; text-align: center;">
+            <h2>권한 오류</h2>
+            <p>${errorData.message || '이 페이지에 접근할 권한이 없습니다.'}</p>
+            <p>올바른 계정으로 로그인해주세요.</p>
+            <button onclick="window.location.href='index.html'" style="margin-top: 20px; padding: 10px 20px;">로그인 페이지로</button>
+          </div>
+        `;
+        return false;
+      }
+      
+      // 기타 에러 - 인증 실패로 처리
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = 'index.html';
@@ -88,12 +115,21 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 async function apiCall(endpoint, options = {}) {
   // 매 호출 시 최신 토큰 사용 (localStorage)
   token = getAuthToken();
+  
+  if (!token) {
+    // 토큰이 없으면 로그인 페이지로 리다이렉트
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    window.location.href = 'index.html';
+    throw new Error('인증 토큰이 없습니다.');
+  }
+  
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      'Authorization': `Bearer ${token}`,
       ...(options.headers || {})
     }
   });
@@ -105,7 +141,12 @@ async function apiCall(endpoint, options = {}) {
       window.location.href = 'index.html';
       return;
     }
-    const error = await response.json();
+    if (response.status === 403) {
+      // 권한 없음 - 현재 사용자의 토큰으로는 접근 불가
+      const error = await response.json().catch(() => ({ message: '권한이 없습니다.' }));
+      throw new Error(error.message || '권한이 없습니다.');
+    }
+    const error = await response.json().catch(() => ({ message: '요청 실패' }));
     throw new Error(error.message || '요청 실패');
   }
   return response.json();
