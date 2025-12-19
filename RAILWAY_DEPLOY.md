@@ -47,9 +47,15 @@ mysql -u root -p railway < db.sql
 
 ### Node.js 서비스 설정
 
-1. **Root Directory**: `server` (또는 자동 감지)
+**옵션 1: Root Directory를 `server`로 설정 (권장)**
+1. **Root Directory**: `server`
 2. **Start Command**: `npm start` 
 3. **Build Command**: `npm install` (자동)
+
+**옵션 2: Root Directory를 프로젝트 루트로 설정**
+1. **Root Directory**: `.` (프로젝트 루트)
+2. **Start Command**: `cd server && npm start`
+3. **Build Command**: `cd server && npm install`
 
 ## 4. 배포 확인 및 서버 링크 확인
 
@@ -89,6 +95,11 @@ mysql -u root -p railway < db.sql
 
 - `app.js`에 클라이언트 정적 파일 서빙 코드가 추가되었는지 확인
 - 브라우저 개발자 도구의 Network 탭에서 파일 요청 상태 확인
+- Railway 로그에서 "Client path:" 메시지를 확인하여 경로가 올바른지 확인
+- "Not Found" 에러가 계속 발생하면:
+  1. Railway 대시보드 → 서비스 → **Settings** → **Root Directory** 확인
+  2. Root Directory가 `server`인지 확인
+  3. Railway 로그에서 경로 관련 에러 메시지 확인
 
 ## 6. 추가 참고사항
 

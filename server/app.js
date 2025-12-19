@@ -4,6 +4,7 @@ const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
 const dotenv = require('dotenv');
 const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -56,7 +57,22 @@ app.use('/files', fileRoutes);
 app.use('/audits', auditRoutes);
 
 // 클라이언트 정적 파일 서빙 (API 라우트 이후에 배치)
-app.use(express.static(path.join(__dirname, '../client')));
+// Railway에서 server 폴더가 루트인 경우 ../client 경로 사용
+// 프로젝트 루트가 루트인 경우 ./client 경로 사용
+const clientPath = path.resolve(__dirname, '../client');
+if (!fs.existsSync(clientPath)) {
+  // 프로젝트 루트가 루트인 경우 시도
+  const altClientPath = path.resolve(__dirname, './client');
+  if (fs.existsSync(altClientPath)) {
+    console.log('Using alternative client path:', altClientPath);
+    app.use(express.static(altClientPath));
+  } else {
+    console.error('Client directory not found. Tried:', clientPath, 'and', altClientPath);
+  }
+} else {
+  console.log('Using client path:', clientPath);
+  app.use(express.static(clientPath));
+}
 
 // 404 핸들링 (모든 라우트와 정적 파일 서빙 이후)
 app.use((req, res) => {
@@ -65,7 +81,16 @@ app.use((req, res) => {
     res.status(404).json({ message: 'API 엔드포인트를 찾을 수 없습니다.' });
   } else {
     // 클라이언트 요청인 경우 index.html 반환 (SPA 라우팅 지원)
-    res.sendFile(path.join(__dirname, '../client/index.html'));
+    const indexPath = path.resolve(__dirname, '../client/index.html');
+    const altIndexPath = path.resolve(__dirname, './client/index.html');
+    const finalIndexPath = fs.existsSync(indexPath) ? indexPath : altIndexPath;
+    
+    if (fs.existsSync(finalIndexPath)) {
+      res.sendFile(finalIndexPath);
+    } else {
+      console.error('index.html을 찾을 수 없습니다. 시도한 경로:', indexPath, altIndexPath);
+      res.status(404).json({ message: '페이지를 찾을 수 없습니다.' });
+    }
   }
 });
 
