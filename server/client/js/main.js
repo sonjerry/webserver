@@ -8,8 +8,14 @@ function getCookie(name) {
   return null;
 }
 
+// 리다이렉트 중복 방지 플래그
+let isRedirecting = false;
+
 // 로그인 상태 확인 (쿠키 기반)
 async function checkAuthStatus() {
+  // 이미 리다이렉트 중이면 중복 방지
+  if (isRedirecting) return null;
+  
   try {
     const res = await fetch(`${API_BASE}/auth/me`, {
       method: 'GET',
@@ -25,9 +31,11 @@ async function checkAuthStatus() {
       
       // localStorage에도 저장 (기존 코드와 호환)
       localStorage.setItem('user', JSON.stringify(user));
+      localStorage.setItem('token', data.token || localStorage.getItem('token') || '');
       
       // 로그인 페이지에서 접근한 경우 대시보드로 리다이렉트
       if (window.location.pathname.includes('index.html') || window.location.pathname.endsWith('/')) {
+        isRedirecting = true;
         if (user.role === 'STUDENT') {
           window.location.href = 'student.html';
         } else if (user.role === 'INSTRUCTOR') {

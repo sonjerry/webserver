@@ -17,8 +17,14 @@ function formatDateOnly(value) {
   }
 }
 
+// 리다이렉트 중복 방지 플래그
+let isRedirecting = false;
+
 // 쿠키 + Authorization 기반 로그인 확인
 async function checkAuth() {
+  // 이미 리다이렉트 중이면 중복 방지
+  if (isRedirecting) return false;
+  
   // 매번 최신 토큰 사용
   token = localStorage.getItem('token');
   try {
@@ -36,15 +42,24 @@ async function checkAuth() {
       currentUser = data.user;
       localStorage.setItem('user', JSON.stringify(currentUser));
       if (currentUser.role !== 'ADMIN') {
+        isRedirecting = true;
         window.location.href = 'index.html';
+        return false;
       }
       return true;
     } else {
+      // 인증 실패 시 토큰 제거 후 리다이렉트
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      isRedirecting = true;
       window.location.href = 'index.html';
       return false;
     }
   } catch (err) {
     console.error('인증 확인 실패:', err);
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    isRedirecting = true;
     window.location.href = 'index.html';
     return false;
   }
@@ -93,7 +108,12 @@ async function apiCall(endpoint, options = {}) {
   token = localStorage.getItem('token');
   
   if (!token) {
-    window.location.href = 'index.html';
+    if (!isRedirecting) {
+      isRedirecting = true;
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = 'index.html';
+    }
     throw new Error('인증 토큰이 없습니다.');
   }
   
@@ -109,11 +129,14 @@ async function apiCall(endpoint, options = {}) {
   
   if (!response.ok) {
     if (response.status === 401) {
-      // 인증 실패 시 로그인 페이지로 리다이렉트
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = 'index.html';
-      return;
+      // 인증 실패 시 로그인 페이지로 리다이렉트 (중복 방지)
+      if (!isRedirecting) {
+        isRedirecting = true;
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = 'index.html';
+      }
+      throw new Error('인증이 만료되었습니다.');
     }
     const error = await response.json().catch(() => ({ message: '요청 실패' }));
     throw new Error(error.message || '요청 실패');
@@ -143,8 +166,8 @@ async function loadDepartments() {
     }
   } catch (err) {
     console.error('학과 목록 로드 실패:', err);
-    // 401 에러는 apiCall에서 이미 처리하므로 여기서는 로그만 출력
-    if (err.message !== '인증 토큰이 없습니다.') {
+    // 인증 관련 에러는 리다이렉트되므로 에러 메시지 표시 안 함
+    if (err.message !== '인증 토큰이 없습니다.' && err.message !== '인증이 만료되었습니다.' && !isRedirecting) {
       const list = document.getElementById('department-list');
       if (list) {
         list.innerHTML = '<div class="error-message">학과 목록을 불러올 수 없습니다: ' + err.message + '</div>';
