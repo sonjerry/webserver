@@ -41,6 +41,17 @@ CREATE TABLE Courses (
   FOREIGN KEY (semester_id) REFERENCES Semesters(id)
 );
 
+CREATE TABLE CourseSchedules (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  course_id INT NOT NULL,
+  day_of_week TINYINT NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (course_id) REFERENCES Courses(id) ON DELETE CASCADE,
+  INDEX idx_course_id (course_id)
+);
+
 CREATE TABLE ClassSessions (
   id INT PRIMARY KEY AUTO_INCREMENT,
   course_id INT NOT NULL,

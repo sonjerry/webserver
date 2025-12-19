@@ -375,8 +375,8 @@ const createCourse = async (req, res) => {
       await connection.beginTransaction();
 
       const [courseResult] = await connection.query(
-        'INSERT INTO Courses (title, instructor_id, department_id, semester_id, section, day_of_week, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [title, instructor_id, department_id, semester_id, section || null, null, null, null]
+        'INSERT INTO Courses (title, instructor_id, department_id, semester_id, section) VALUES (?, ?, ?, ?, ?)',
+        [title, instructor_id, department_id, semester_id, section || null]
       );
       const courseId = courseResult.insertId;
 
@@ -442,8 +442,30 @@ const createCourse = async (req, res) => {
       connection.release();
     }
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: '강의 생성 중 오류가 발생했습니다.' });
+    console.error('강의 생성 오류:', err);
+    console.error('에러 상세:', {
+      message: err.message,
+      code: err.code,
+      errno: err.errno,
+      sqlState: err.sqlState,
+      sqlMessage: err.sqlMessage,
+      stack: err.stack
+    });
+    
+    // 개발 환경에서는 상세 에러 정보 포함
+    const errorMessage = process.env.NODE_ENV === 'development' 
+      ? `강의 생성 중 오류가 발생했습니다: ${err.message}`
+      : '강의 생성 중 오류가 발생했습니다.';
+    
+    res.status(500).json({ 
+      message: errorMessage,
+      error: process.env.NODE_ENV === 'development' ? {
+        message: err.message,
+        code: err.code,
+        errno: err.errno,
+        sqlState: err.sqlState
+      } : undefined
+    });
   }
 };
 
