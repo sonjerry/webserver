@@ -47,15 +47,21 @@ mysql -u root -p railway < db.sql
 
 ### Node.js 서비스 설정
 
-**옵션 1: Root Directory를 `server`로 설정 (권장)**
-1. **Root Directory**: `server`
-2. **Start Command**: `npm start` 
-3. **Build Command**: `npm install` (자동)
+**⚠️ 중요: `client` 폴더 접근을 위해 프로젝트 루트를 Root Directory로 설정해야 합니다**
 
-**옵션 2: Root Directory를 프로젝트 루트로 설정**
-1. **Root Directory**: `.` (프로젝트 루트)
-2. **Start Command**: `cd server && npm start`
-3. **Build Command**: `cd server && npm install`
+**권장 설정:**
+1. Railway 대시보드 → Node.js 서비스 → **Settings** 탭
+2. **Root Directory**: `.` (프로젝트 루트) 또는 비워두기
+3. **Start Command**: `cd server && npm start`
+4. **Build Command**: `cd server && npm install` (또는 자동)
+
+이렇게 설정하면:
+- 전체 프로젝트 구조(`client/`, `server/`)가 Railway에 포함됩니다
+- `server/app.js`에서 `../client` 경로로 `client` 폴더에 접근할 수 있습니다
+
+**만약 Root Directory를 `server`로 설정한 경우:**
+- `client` 폴더가 Railway 빌드에 포함되지 않을 수 있습니다
+- 이 경우 Root Directory를 프로젝트 루트(`.`)로 변경하세요
 
 ## 4. 배포 확인 및 서버 링크 확인
 
@@ -91,15 +97,29 @@ mysql -u root -p railway < db.sql
 - `app.js`에서 이미 `process.env.PORT`를 사용하므로 별도 설정 불필요
 - Railway가 자동으로 포트를 할당합니다
 
-### 정적 파일이 로드되지 않음
+### 정적 파일이 로드되지 않음 / "페이지를 찾을 수 없습니다" 에러
 
-- `app.js`에 클라이언트 정적 파일 서빙 코드가 추가되었는지 확인
-- 브라우저 개발자 도구의 Network 탭에서 파일 요청 상태 확인
-- Railway 로그에서 "Client path:" 메시지를 확인하여 경로가 올바른지 확인
-- "Not Found" 에러가 계속 발생하면:
-  1. Railway 대시보드 → 서비스 → **Settings** → **Root Directory** 확인
-  2. Root Directory가 `server`인지 확인
-  3. Railway 로그에서 경로 관련 에러 메시지 확인
+**가장 흔한 원인: Root Directory 설정 문제**
+
+1. **Railway 설정 확인**:
+   - Railway 대시보드 → 서비스 → **Settings** → **Root Directory**
+   - Root Directory가 `server`로 설정되어 있으면 → `.` (프로젝트 루트)로 변경
+   - Start Command를 `cd server && npm start`로 변경
+
+2. **Railway 로그 확인**:
+   - Railway 대시보드 → 서비스 → **Deployments** → 최신 배포 → **View Logs**
+   - 다음 메시지 확인:
+     - `✅ Using client path: ...` → 정상
+     - `❌ Client directory not found` → Root Directory 설정 문제
+     - `__dirname: /app/server` → 정상 (Root Directory가 `.`인 경우)
+     - `__dirname: /app` → Root Directory가 `server`로 잘못 설정됨
+
+3. **브라우저 개발자 도구 확인**:
+   - Network 탭에서 파일 요청 상태 확인
+   - 404 에러가 나는 파일 경로 확인
+
+4. **재배포**:
+   - 설정 변경 후 자동으로 재배포되거나, 수동으로 **Redeploy** 클릭
 
 ## 6. 추가 참고사항
 
