@@ -42,6 +42,8 @@ async function checkAuth() {
       if (currentUser.role !== 'INSTRUCTOR') {
         window.location.href = 'index.html';
       }
+      // 헤더에 사용자 정보 표시
+      updateUserInfoDisplay();
       return true;
     } else {
       // 인증 실패 시 localStorage 정리 (서버의 HttpOnly 쿠키는 서버에서만 삭제 가능)
@@ -60,8 +62,25 @@ async function checkAuth() {
   }
 }
 
+// 헤더에 사용자 정보 표시
+function updateUserInfoDisplay() {
+  const nameDisplay = document.getElementById('user-name-display');
+  const deptDisplay = document.getElementById('user-department-display');
+  if (nameDisplay) {
+    nameDisplay.textContent = currentUser.name || currentUser.email || '사용자';
+  }
+  if (deptDisplay) {
+    deptDisplay.textContent = currentUser.department_name ? `(${currentUser.department_name})` : '';
+  }
+}
+
 // 페이지 로드 시 인증 확인
 checkAuth();
+
+// 페이지 로드 시 저장된 사용자 정보로 초기 표시
+if (currentUser && currentUser.id) {
+  updateUserInfoDisplay();
+}
 
 // 로그아웃
 document.getElementById('logout-btn').addEventListener('click', async () => {

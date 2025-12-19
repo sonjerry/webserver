@@ -85,7 +85,13 @@ router.post('/refresh', authenticateToken, async (req, res) => {
 // GET /auth/me (현재 로그인 상태 확인)
 router.get('/me', authenticateToken, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, email, name, role FROM Users WHERE id = ?', [req.user.id]);
+    const [rows] = await pool.query(
+      `SELECT u.id, u.email, u.name, u.role, u.department_id, d.name as department_name 
+       FROM Users u 
+       LEFT JOIN Departments d ON u.department_id = d.id 
+       WHERE u.id = ?`, 
+      [req.user.id]
+    );
     if (!rows[0]) {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }

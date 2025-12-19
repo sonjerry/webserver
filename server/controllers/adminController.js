@@ -698,7 +698,12 @@ const deleteCourse = async (req, res) => {
 // 사용자 관리
 const getUsers = async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT id, email, name, role, created_at FROM Users ORDER BY created_at DESC');
+    const [rows] = await pool.query(
+      `SELECT u.id, u.email, u.name, u.role, u.department_id, d.name as department_name, u.created_at 
+       FROM Users u 
+       LEFT JOIN Departments d ON u.department_id = d.id 
+       ORDER BY u.created_at DESC`
+    );
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -707,7 +712,7 @@ const getUsers = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { email, name, role } = req.body;
+  const { email, name, role, department_id } = req.body;
   if (!email || !role) {
     return res.status(400).json({ message: '이메일과 역할은 필수입니다.' });
   }
@@ -716,8 +721,8 @@ const createUser = async (req, res) => {
   }
   try {
     const [result] = await pool.query(
-      'INSERT INTO Users (email, name, role) VALUES (?, ?, ?)',
-      [email, name || null, role]
+      'INSERT INTO Users (email, name, role, department_id) VALUES (?, ?, ?, ?)',
+      [email, name || null, role, department_id || null]
     );
     
     // 감사 로그 기록
@@ -730,7 +735,7 @@ const createUser = async (req, res) => {
       getClientIp(req)
     );
     
-    res.status(201).json({ id: result.insertId, email, name, role });
+    res.status(201).json({ id: result.insertId, email, name, role, department_id: department_id || null });
   } catch (err) {
     console.error(err);
     if (err.code === 'ER_DUP_ENTRY') {
@@ -742,7 +747,7 @@ const createUser = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { email, name, role } = req.body;
+  const { email, name, role, department_id } = req.body;
   if (!email || !role) {
     return res.status(400).json({ message: '이메일과 역할은 필수입니다.' });
   }
@@ -751,11 +756,11 @@ const updateUser = async (req, res) => {
   }
   try {
     // 기존 정보 조회
-    const [oldUser] = await pool.query('SELECT email, name, role FROM Users WHERE id = ?', [id]);
+    const [oldUser] = await pool.query('SELECT email, name, role, department_id FROM Users WHERE id = ?', [id]);
     
     const [result] = await pool.query(
-      'UPDATE Users SET email = ?, name = ?, role = ? WHERE id = ?',
-      [email, name || null, role, id]
+      'UPDATE Users SET email = ?, name = ?, role = ?, department_id = ? WHERE id = ?',
+      [email, name || null, role, department_id || null, id]
     );
     if (result.affectedRows === 0) {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
@@ -779,7 +784,7 @@ const updateUser = async (req, res) => {
       getClientIp(req)
     );
     
-    res.json({ id: parseInt(id), email, name, role });
+    res.json({ id: parseInt(id), email, name, role, department_id: department_id || null });
   } catch (err) {
     console.error(err);
     if (err.code === 'ER_DUP_ENTRY') {

@@ -169,7 +169,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
       loadSemestersForSelect();
       loadStudentsForCourseForm();
     }
-    else if (btn.dataset.tab === 'users') loadUsers();
+    else if (btn.dataset.tab === 'users') {
+      loadUsers();
+      loadDepartmentsForUserForm();
+    }
     else if (btn.dataset.tab === 'audit-logs') loadAuditLogs();
     else if (btn.dataset.tab === 'reports') {
       loadSystemReport();
@@ -720,9 +723,9 @@ async function loadUsers() {
     const adminList = document.getElementById('user-list-admin');
     adminList.innerHTML = admins.length > 0 ? admins.map(user => `
       <div class="list-item">
-        <span><strong>${user.name || user.email}</strong> (${user.email})</span>
+        <span><strong>${user.name || user.email}</strong> (${user.email})${user.department_name ? ` - ${user.department_name}` : ''}</span>
         <div>
-          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}')">수정</button>
+          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}', ${user.department_id || 'null'})">수정</button>
           <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">삭제</button>
         </div>
       </div>
@@ -732,9 +735,9 @@ async function loadUsers() {
     const instructorList = document.getElementById('user-list-instructor');
     instructorList.innerHTML = instructors.length > 0 ? instructors.map(user => `
       <div class="list-item">
-        <span><strong>${user.name || user.email}</strong> (${user.email})</span>
+        <span><strong>${user.name || user.email}</strong> (${user.email})${user.department_name ? ` - ${user.department_name}` : ''}</span>
         <div>
-          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}')">수정</button>
+          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}', ${user.department_id || 'null'})">수정</button>
           <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">삭제</button>
         </div>
       </div>
@@ -744,9 +747,9 @@ async function loadUsers() {
     const studentList = document.getElementById('user-list-student');
     studentList.innerHTML = students.length > 0 ? students.map(user => `
       <div class="list-item">
-        <span><strong>${user.name || user.email}</strong> (${user.email})</span>
+        <span><strong>${user.name || user.email}</strong> (${user.email})${user.department_name ? ` - ${user.department_name}` : ''}</span>
         <div>
-          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}')">수정</button>
+          <button class="btn btn-small" onclick="editUser(${user.id}, '${user.email}', '${(user.name || '').replace(/'/g, "\\'")}', '${user.role}', ${user.department_id || 'null'})">수정</button>
           <button class="btn btn-small btn-danger" onclick="deleteUser(${user.id})">삭제</button>
         </div>
       </div>
@@ -788,12 +791,14 @@ async function loadUsers() {
 document.getElementById('user-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   try {
+    const departmentId = document.getElementById('user-department').value;
     await apiCall('/admin/users', {
       method: 'POST',
       body: JSON.stringify({
         email: document.getElementById('user-email').value,
         name: document.getElementById('user-name').value || null,
-        role: document.getElementById('user-role').value
+        role: document.getElementById('user-role').value,
+        department_id: departmentId ? parseInt(departmentId, 10) : null
       })
     });
     alert('사용자가 추가되었습니다.');
@@ -804,25 +809,60 @@ document.getElementById('user-form').addEventListener('submit', async (e) => {
   }
 });
 
-async function editUser(id, email, name, role) {
+async function loadDepartmentsForUserForm() {
+  try {
+    const departments = await apiCall('/admin/departments');
+    const select = document.getElementById('user-department');
+    if (select) {
+      select.innerHTML = '<option value="">학과 선택 (선택)</option>' + 
+        departments.map(dept => `<option value="${dept.id}">${dept.name}</option>`).join('');
+    }
+  } catch (err) {
+    console.error('학과 목록 로드 실패:', err);
+  }
+}
+
+async function editUser(id, email, name, role, departmentId) {
   const newEmail = prompt('이메일:', email);
+  if (!newEmail) return;
   const newName = prompt('이름:', name);
   const newRole = prompt('역할 (ADMIN/INSTRUCTOR/STUDENT):', role);
-  if (newEmail && newRole) {
-    try {
-      await apiCall(`/admin/users/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          email: newEmail,
-          name: newName || null,
-          role: newRole
-        })
-      });
-      alert('사용자가 수정되었습니다.');
-      loadUsers();
-    } catch (err) {
-      alert('사용자 수정 실패: ' + err.message);
+  if (!newRole) return;
+  
+  // 학과 선택을 위한 모달 또는 prompt
+  const departments = await apiCall('/admin/departments').catch(() => []);
+  let departmentOptions = '0. 학과 없음\n';
+  departments.forEach((dept, idx) => {
+    departmentOptions += `${idx + 1}. ${dept.name}\n`;
+  });
+  const deptChoice = prompt(`학과 선택:\n${departmentOptions}\n번호를 입력하세요:`, departmentId ? departments.findIndex(d => d.id === departmentId) + 1 : 0);
+  
+  let newDepartmentId = null;
+  if (deptChoice && !isNaN(deptChoice)) {
+    const choice = parseInt(deptChoice, 10);
+    if (choice === 0) {
+      newDepartmentId = null;
+    } else if (choice > 0 && choice <= departments.length) {
+      newDepartmentId = departments[choice - 1].id;
     }
+  } else if (departmentId) {
+    newDepartmentId = departmentId;
+  }
+  
+  try {
+    await apiCall(`/admin/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        email: newEmail,
+        name: newName || null,
+        role: newRole,
+        department_id: newDepartmentId
+      })
+    });
+    alert('사용자가 수정되었습니다.');
+    loadUsers();
+  } catch (err) {
+    alert('사용자 수정 실패: ' + err.message);
   }
 }
 

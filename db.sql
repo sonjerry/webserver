@@ -231,4 +231,8 @@ INSERT INTO Users (email, name, role) VALUES
 ('student@example.com', '학생', 'STUDENT')
 ON DUPLICATE KEY UPDATE email = email;
 
+-- Users 테이블에 department_id 컬럼 추가
+ALTER TABLE Users ADD COLUMN department_id INT NULL AFTER name;
+ALTER TABLE Users ADD FOREIGN KEY (department_id) REFERENCES Departments(id);
+
 
